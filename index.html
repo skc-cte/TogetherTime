@@ -315,31 +315,22 @@
 
         // --- Firebase Initialization and Authentication ---
         async function setupFirebase() {
-            let firebaseConfig;
-            let isLocal = false;
-            try {
-                // Check if the app is running in the hosted environment
-                if (typeof __firebase_config !== 'undefined' && __firebase_config.length > 0) {
-                    firebaseConfig = JSON.parse(__firebase_config);
-                } else {
-                    // Fallback for local execution
-                    isLocal = true;
-                    firebaseConfig = {
-                        apiKey: "local-api-key",
-                        authDomain: "local-auth-domain",
-                        projectId: "local-project-id"
-                    };
-                    showMessage("Running locally. Firebase features (screen sharing, chat) will be disabled. To use full functionality, please use the hosted link.");
-                }
-            } catch (error) {
-                console.error("Firebase config parsing failed:", error);
-                showMessage('Error: Failed to load app configuration. Please try re-opening the link.');
-                return;
-            }
+            // This firebaseConfig object has been updated with your values.
+            const firebaseConfig = {
+                apiKey: "AIzaSyCKPARNHk-6Jyl_tJpDrX_taqyktqeSA9s",
+                authDomain: "my-watch-party-app.firebaseapp.com",
+                projectId: "my-watch-party-app",
+                storageBucket: "my-watch-party-app.firebasestorage.app",
+                messagingSenderId: "72645236319",
+                appId: "1:72645236319:web:98959a0f51575902726dea",
+                measurementId: "G-VLQM5PG4WG"
+            };
+
+            console.log("Using Firebase config:", firebaseConfig);
 
             try {
-                if (Object.keys(firebaseConfig).length === 0) {
-                    showMessage('Firebase configuration not found. Please ensure the app is configured with Firebase.');
+                if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+                    showMessage('Firebase configuration is incomplete. Please ensure the app is configured with Firebase.');
                     return;
                 }
                 app = initializeApp(firebaseConfig);
@@ -350,20 +341,11 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
-                        authStatus.textContent = isLocal ? 'Auth local fallback' : 'Auth successful!';
+                        authStatus.textContent = 'Auth successful!';
                         userIdDisplay.textContent = `User ID: ${userId}`;
                         isAuthReady = true;
-                        if (!isLocal) {
-                            await checkAndSetupHost();
-                            listenForChatMessages();
-                        } else {
-                            // Disable buttons in local mode
-                            shareScreenBtn.disabled = true;
-                            toggleMicBtn.disabled = true;
-                            videoFileInput.disabled = true;
-                            chatInput.disabled = true;
-                            chatSendBtn.disabled = true;
-                        }
+                        await checkAndSetupHost();
+                        listenForChatMessages();
                     } else {
                         if (initialAuthToken) {
                             await signInWithCustomToken(auth, initialAuthToken);
@@ -375,7 +357,7 @@
             } catch (error) {
                 console.error("Firebase setup failed:", error);
                 authStatus.textContent = 'Auth Error: See console for details.';
-                showMessage(`Firebase setup failed: ${error.message}. If you are running locally, this is expected.`);
+                showMessage(`Firebase setup failed: ${error.message}`);
             }
         }
 
@@ -427,7 +409,7 @@
         }
 
         async function createHostOffer() {
-            if (!isAuthReady || authStatus.textContent.includes("local")) {
+            if (!isAuthReady) {
                 showMessage("Firebase is not configured for a live session. Screen sharing and chat are disabled. Please use the hosted link.");
                 return;
             }
@@ -504,7 +486,7 @@
         }
 
         async function listenForSignaling(docRef) {
-            if (!isAuthReady || authStatus.textContent.includes("local")) {
+            if (!isAuthReady) {
                 return;
             }
             onSnapshot(docRef, async (docSnap) => {
@@ -532,8 +514,8 @@
 
         // --- Microphone Logic ---
         async function toggleMic() {
-            if (!isAuthReady || authStatus.textContent.includes("local")) {
-                showMessage("This feature is disabled in local mode. Please use the hosted link for full functionality.");
+            if (!isAuthReady) {
+                showMessage("This feature is disabled. Please use the hosted link for full functionality.");
                 return;
             }
 
@@ -585,7 +567,7 @@
 
         // --- Chat Logic ---
         function listenForChatMessages() {
-            if (!db || !isAuthReady || authStatus.textContent.includes("local")) {
+            if (!db || !isAuthReady) {
                 return;
             }
             const q = query(collection(db, `artifacts/${appId}/public/data/${messagesCollectionName}`));
@@ -616,8 +598,8 @@
         
         chatSendBtn.onclick = async () => {
             const message = chatInput.value.trim();
-            if (!message || !isAuthReady || authStatus.textContent.includes("local")) {
-                showMessage("Chat is disabled in local mode. Please use the hosted link for live chat.");
+            if (!message || !isAuthReady) {
+                showMessage("Chat is disabled. Please use the hosted link for live chat.");
                 return;
             }
 
@@ -642,8 +624,8 @@
 
         // --- Event Handlers ---
         shareScreenBtn.onclick = () => {
-            if (!isAuthReady || authStatus.textContent.includes("local")) {
-                showMessage("This feature is disabled in local mode. Please use the hosted link for full functionality.");
+            if (!isAuthReady) {
+                showMessage("This feature is disabled. Please use the hosted link for full functionality.");
                 return;
             }
             isHost = true;
