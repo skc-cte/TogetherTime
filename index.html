@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE-html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -108,7 +108,15 @@
             color: white;
             box-shadow: 0 4px 15px rgba(3, 169, 244, 0.4);
         }
-        
+
+        .share-screen.stop-sharing {
+            background-color: #F44336;
+        }
+
+        .share-screen.stop-sharing:hover {
+            background-color: #E57373;
+        }
+
         .share-screen:hover {
             transform: translateY(-2px);
             background-color: #29B6F6;
@@ -296,6 +304,7 @@
         let auth;
         let userId = null;
         let isHost = false;
+        let isSharing = false;
         let isAuthReady = false;
         const mainChannelDocId = 'main-channel';
         const messagesCollectionName = 'chat_messages';
@@ -381,7 +390,7 @@
                         authStatus.textContent = 'Auth successful!';
                         userIdDisplay.textContent = `User ID: ${userId}`;
                         isAuthReady = true;
-                        checkAndSetupHost();
+                        initializeStateAndListeners();
                         listenForChatMessages();
                     } else {
                         // User is signed out. UI will reflect this.
@@ -398,43 +407,53 @@
             }
         }
 
-        // Use onSnapshot to handle real-time updates and initial state
-        function checkAndSetupHost() {
+        // Initialize state and set up listeners after auth is ready
+        function initializeStateAndListeners() {
             if (!db || !isAuthReady) {
-                console.warn("Firestore not ready. Aborting checkAndSetupHost.");
+                console.warn("Firestore not ready. Aborting state initialization.");
                 return;
             }
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
+            const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
 
-                // onSnapshot handles initial document retrieval and real-time updates
-                onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists() && docSnap.data().hostId) {
-                        isHost = false;
-                        shareScreenBtn.textContent = 'Watching Live';
-                        shareScreenBtn.disabled = true;
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists() && docSnap.data().hostId) {
+                    // A host is active
+                    isHost = false;
+                    shareScreenBtn.textContent = 'Watching Live';
+                    shareScreenBtn.disabled = true;
+                    if (typeof pc === 'undefined' || pc === null) {
+                        // Only show message and set up if not already connected
                         showMessage("A watch party is already active. You are a viewer.");
-                        // Viewer logic
                         setupPeerConnection();
                         listenForSignaling(docRef);
-                    } else {
-                        isHost = true;
-                        if (typeof navigator.mediaDevices.getDisplayMedia === 'undefined') {
-                            shareScreenBtn.textContent = 'Screen Sharing Not Supported';
-                            shareScreenBtn.disabled = true;
-                            screenShareWarning.style.display = 'block';
-                        } else {
-                            shareScreenBtn.textContent = 'Become Host & Share Screen';
-                            shareScreenBtn.disabled = false;
-                        }
                     }
-                });
-            } catch (e) {
-                console.error("Error setting up host listener:", e);
-                showMessage("Failed to connect to the server. Please check your internet connection.");
-            }
-        }
+                } else {
+                    // No host is active
+                    isHost = true;
+                    isSharing = false;
+                    shareScreenBtn.classList.remove('stop-sharing');
+                    shareScreenBtn.textContent = 'Become Host & Share Screen';
+                    
+                    if (typeof navigator.mediaDevices.getDisplayMedia === 'undefined') {
+                        shareScreenBtn.textContent = 'Screen Sharing Not Supported';
+                        shareScreenBtn.disabled = true;
+                        screenShareWarning.style.display = 'block';
+                    } else {
+                         shareScreenBtn.disabled = false;
+                    }
 
+                    // Clean up UI and connection for viewers
+                    videoElement.style.display = 'none';
+                    localVideoFilePlayer.style.display = 'none';
+                    remoteVideo.style.display = 'none';
+                    if (pc) {
+                        pc.close();
+                        pc = null;
+                    }
+                }
+            });
+        }
+        
         // --- WebRTC Logic ---
         const servers = {
             iceServers: [
@@ -444,6 +463,7 @@
         
         // This function resets the UI and WebRTC state
         async function stopSharing() {
+            console.log("Stopping sharing...");
             if (localScreenStream) {
                 localScreenStream.getTracks().forEach(track => track.stop());
                 localScreenStream = null;
@@ -452,7 +472,8 @@
                 pc.close();
                 pc = null;
             }
-            // Clear the signaling document in Firestore to allow a new host
+            
+            // Explicitly delete the signaling document to signal to viewers that the session has ended
             const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
             try {
                 await deleteDoc(docRef);
@@ -460,12 +481,12 @@
                 console.error("Error clearing signaling document:", e);
             }
             
-            isHost = false;
+            isSharing = false;
+            shareScreenBtn.classList.remove('stop-sharing');
+            shareScreenBtn.textContent = 'Become Host & Share Screen';
             localVideoFilePlayer.style.display = 'none';
             videoElement.style.display = 'none';
             remoteVideo.style.display = 'none';
-            shareScreenBtn.textContent = 'Become Host & Share Screen';
-            shareScreenBtn.disabled = false;
             showMessage("Screen sharing has stopped.");
         }
 
@@ -482,7 +503,6 @@
                     videoElement.style.display = 'none';
                     localVideoFilePlayer.style.display = 'none';
                     remoteVideo.style.display = 'block';
-                    showMessage("Connected to host. Screen sharing is live.");
                 } else if (event.track.kind === 'audio') {
                     const audioStream = new MediaStream([event.track]);
                     remoteAudio.srcObject = audioStream;
@@ -723,10 +743,16 @@
                 showMessage("This feature is disabled. Please use the hosted link for full functionality.");
                 return;
             }
-            isHost = true;
-            shareScreenBtn.textContent = 'You are the Host';
-            shareScreenBtn.disabled = true;
-            createHostOffer();
+            
+            if (isHost && !isSharing) {
+                isSharing = true;
+                shareScreenBtn.classList.add('stop-sharing');
+                shareScreenBtn.textContent = 'Stop Sharing';
+                shareScreenBtn.disabled = true;
+                createHostOffer();
+            } else if (isHost && isSharing) {
+                stopSharing();
+            }
         };
 
         toggleMicBtn.onclick = toggleMic;
