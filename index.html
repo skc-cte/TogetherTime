@@ -113,6 +113,16 @@
             transform: translateY(-2px);
             background-color: #29B6F6;
         }
+        
+        .share-screen:disabled, .share-screen[disabled] {
+            background-color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .share-screen:disabled:hover {
+            transform: none;
+        }
 
         .toggle-mic {
             background-color: #F44336;
@@ -312,6 +322,10 @@
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const chatSendBtn = document.getElementById('chat-send-btn');
+        const screenShareWarning = document.createElement('div');
+        screenShareWarning.textContent = "Screen sharing is not supported on this device. Please try on a desktop browser.";
+        screenShareWarning.classList.add('text-red-400', 'text-sm', 'mt-2', 'hidden');
+        shareScreenBtn.parentNode.insertBefore(screenShareWarning, shareScreenBtn.nextSibling);
 
         // Function to show a custom modal message
         function showMessage(message) {
@@ -405,8 +419,14 @@
                         listenForSignaling(docRef);
                     } else {
                         isHost = true;
-                        shareScreenBtn.textContent = 'Become Host & Share Screen';
-                        shareScreenBtn.disabled = false;
+                        if (typeof navigator.mediaDevices.getDisplayMedia === 'undefined') {
+                            shareScreenBtn.textContent = 'Screen Sharing Not Supported';
+                            shareScreenBtn.disabled = true;
+                            screenShareWarning.style.display = 'block';
+                        } else {
+                            shareScreenBtn.textContent = 'Become Host & Share Screen';
+                            shareScreenBtn.disabled = false;
+                        }
                     }
                 });
             } catch (e) {
@@ -421,6 +441,34 @@
                 { urls: 'stun:stun.l.google.com:19302' },
             ]
         };
+        
+        // This function resets the UI and WebRTC state
+        async function stopSharing() {
+            if (localScreenStream) {
+                localScreenStream.getTracks().forEach(track => track.stop());
+                localScreenStream = null;
+            }
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            // Clear the signaling document in Firestore to allow a new host
+            const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
+            try {
+                await deleteDoc(docRef);
+            } catch (e) {
+                console.error("Error clearing signaling document:", e);
+            }
+            
+            isHost = false;
+            localVideoFilePlayer.style.display = 'none';
+            videoElement.style.display = 'none';
+            remoteVideo.style.display = 'none';
+            shareScreenBtn.textContent = 'Become Host & Share Screen';
+            shareScreenBtn.disabled = false;
+            showMessage("Screen sharing has stopped.");
+        }
+
 
         function setupPeerConnection() {
             if (pc) return; // Only set up once
@@ -463,6 +511,15 @@
                     remoteVideo.style.display = 'none';
                     showMessage("Screen capture started. Waiting for a viewer to connect...");
                 }
+                
+                // If the stream ends (e.g., user clicks "Stop Sharing"), handle it
+                localScreenStream.getTracks().forEach(track => {
+                    track.onended = () => {
+                        console.log("Screen sharing stopped by user.");
+                        stopSharing();
+                    };
+                });
+
 
                 setupPeerConnection();
                 stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -520,11 +577,11 @@
         }
 
         async function listenForSignaling(docRef) {
-            if (!isAuthReady) {
-                return;
-            }
+            // Only execute this logic if the user is a viewer
+            if (isHost) return;
+            
             onSnapshot(docRef, async (docSnap) => {
-                if (docSnap.exists() && docSnap.data().offer && !isHost) {
+                if (docSnap.exists() && docSnap.data().offer) {
                     const data = docSnap.data();
                     await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
                     const answer = await pc.createAnswer();
@@ -542,6 +599,10 @@
                             setDoc(doc(docRef, 'iceCandidates', event.candidate.sdpMid), { candidate: event.candidate.toJSON() }, { merge: true });
                         }
                     };
+                } else if (!docSnap.exists()) {
+                    // Host has left or stopped sharing
+                    stopSharing();
+                    showMessage("The host has ended the session. The live stream has stopped.");
                 }
             });
         }
