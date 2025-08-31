@@ -339,9 +339,24 @@
                 auth = getAuth(app);
                 authStatus.textContent = 'Auth initializing...';
                 
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
+                // Attempt to sign in with the custom token if it exists.
+                // If it fails, or if the token is not present, sign in anonymously.
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with custom token successfully.");
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (e) {
+                    // This specific error (auth/custom-token-mismatch) is expected in some environments.
+                    // We will silently fall back to anonymous sign-in to ensure functionality.
+                    if (e.code === 'auth/custom-token-mismatch') {
+                        console.log("Custom token mismatch detected. Falling back to anonymous sign-in.");
+                    } else {
+                        console.error("Custom token sign-in failed. Falling back to anonymous sign-in.", e);
+                    }
                     await signInAnonymously(auth);
                 }
 
