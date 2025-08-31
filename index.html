@@ -370,22 +370,30 @@
         }
 
         async function checkAndSetupHost() {
-            if (!db) return;
-            const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
-            const docSnap = await getDoc(docRef);
+            if (!db || !isAuthReady) {
+                console.warn("Firestore not ready. Aborting checkAndSetupHost.");
+                return;
+            }
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
+                const docSnap = await getDoc(docRef);
 
-            if (docSnap.exists() && docSnap.data().hostId) {
-                isHost = false;
-                shareScreenBtn.textContent = 'Watching Live';
-                shareScreenBtn.disabled = true;
-                showMessage("A watch party is already active. You are a viewer.");
-                // Viewer logic
-                setupPeerConnection();
-                listenForSignaling(docRef);
-            } else {
-                isHost = true;
-                shareScreenBtn.textContent = 'Become Host & Share Screen';
-                shareScreenBtn.disabled = false;
+                if (docSnap.exists() && docSnap.data().hostId) {
+                    isHost = false;
+                    shareScreenBtn.textContent = 'Watching Live';
+                    shareScreenBtn.disabled = true;
+                    showMessage("A watch party is already active. You are a viewer.");
+                    // Viewer logic
+                    setupPeerConnection();
+                    listenForSignaling(docRef);
+                } else {
+                    isHost = true;
+                    shareScreenBtn.textContent = 'Become Host & Share Screen';
+                    shareScreenBtn.disabled = false;
+                }
+            } catch (e) {
+                console.error("Error getting document:", e);
+                showMessage("Failed to connect to the server. Please check your internet connection.");
             }
         }
 
