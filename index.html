@@ -367,7 +367,7 @@
                         authStatus.textContent = 'Auth successful!';
                         userIdDisplay.textContent = `User ID: ${userId}`;
                         isAuthReady = true;
-                        await checkAndSetupHost();
+                        checkAndSetupHost();
                         listenForChatMessages();
                     } else {
                         // User is signed out. UI will reflect this.
@@ -384,30 +384,33 @@
             }
         }
 
-        async function checkAndSetupHost() {
+        // Use onSnapshot to handle real-time updates and initial state
+        function checkAndSetupHost() {
             if (!db || !isAuthReady) {
                 console.warn("Firestore not ready. Aborting checkAndSetupHost.");
                 return;
             }
             try {
                 const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
-                const docSnap = await getDoc(docRef);
 
-                if (docSnap.exists() && docSnap.data().hostId) {
-                    isHost = false;
-                    shareScreenBtn.textContent = 'Watching Live';
-                    shareScreenBtn.disabled = true;
-                    showMessage("A watch party is already active. You are a viewer.");
-                    // Viewer logic
-                    setupPeerConnection();
-                    listenForSignaling(docRef);
-                } else {
-                    isHost = true;
-                    shareScreenBtn.textContent = 'Become Host & Share Screen';
-                    shareScreenBtn.disabled = false;
-                }
+                // onSnapshot handles initial document retrieval and real-time updates
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists() && docSnap.data().hostId) {
+                        isHost = false;
+                        shareScreenBtn.textContent = 'Watching Live';
+                        shareScreenBtn.disabled = true;
+                        showMessage("A watch party is already active. You are a viewer.");
+                        // Viewer logic
+                        setupPeerConnection();
+                        listenForSignaling(docRef);
+                    } else {
+                        isHost = true;
+                        shareScreenBtn.textContent = 'Become Host & Share Screen';
+                        shareScreenBtn.disabled = false;
+                    }
+                });
             } catch (e) {
-                console.error("Error getting document:", e);
+                console.error("Error setting up host listener:", e);
                 showMessage("Failed to connect to the server. Please check your internet connection.");
             }
         }
