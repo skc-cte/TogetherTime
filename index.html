@@ -268,7 +268,6 @@
 
         // Global variables provided by the environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let app;
@@ -316,6 +315,16 @@
 
         // --- Firebase Initialization and Authentication ---
         async function setupFirebase() {
+            let firebaseConfig;
+            try {
+                // Ensure __firebase_config exists and is not empty before parsing
+                firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' && __firebase_config.length > 0 ? __firebase_config : '{}');
+            } catch (error) {
+                console.error("Firebase config parsing failed:", error);
+                showMessage('Error: Failed to load app configuration. Please try re-opening the link.');
+                return;
+            }
+
             try {
                 if (Object.keys(firebaseConfig).length === 0) {
                     showMessage('Firebase configuration not found. Please ensure the app is configured with Firebase.');
