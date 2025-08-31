@@ -67,14 +67,15 @@
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     // ✅ Your Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyCKPARNHk-6Jyl_tJpDrX_taqyktqeSA9s",
-      authDomain: "my-watch-party-app.firebaseapp.com",
-      projectId: "my-watch-party-app",
-      storageBucket: "my-watch-party-app.firebasestorage.app",
-      messagingSenderId: "72645236319",
-      appId: "1:72645236319:web:98959a0f51575902726dea",
-      measurementId: "G-VLQM5PG4WG"
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCKPARNHk-6Jyl_tJpDrX_taqyktqeSA9s",
+  authDomain: "my-watch-party-app.firebaseapp.com",
+  projectId: "my-watch-party-app",
+  storageBucket: "my-watch-party-app.appspot.com",
+  messagingSenderId: "72645236319",
+  appId: "1:72645236319:web:98959a0f51575902726dea",
+  measurementId: "G-VLQM5PG4WG"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -169,3 +170,4 @@
   </script>
 </body>
 </html>
+
