@@ -5,724 +5,679 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TogetherTime</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background-color: #121212;
-            color: #e0e0e0;
+            color: #E0E0E0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
         }
+
         .container {
-            max-width: 100%;
-            height: 100vh;
+            background-color: #1E1E1E;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 2rem;
         }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header .invite-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            background-color: #4CAF50;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .header .invite-button:hover {
+            transform: translateY(-2px);
+            background-color: #66BB6A;
+        }
+
         .video-container {
             position: relative;
+            background-color: black;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            width: 100%;
             padding-top: 56.25%; /* 16:9 Aspect Ratio */
-            background-color: #000;
         }
-        .video-container video {
+
+        .video-player {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
         }
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 50vh;
-            background-color: #1c1c1c;
-            border-top-left-radius: 1.5rem;
-            border-top-right-radius: 1.5rem;
-            padding: 1rem;
-            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
-        }
-        .chat-box {
-            flex-grow: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            padding-bottom: 1rem;
-        }
-        .message-row {
-            display: flex;
-            align-items: center;
-        }
-        .my-message {
-            margin-left: auto;
-            background-color: #3b82f6;
-            color: white;
-            border-radius: 1.5rem 1.5rem 0.25rem 1.5rem;
-            padding: 0.5rem 1rem;
-        }
-        .other-message {
-            background-color: #2e2e2e;
-            color: #e0e0e0;
-            border-radius: 1.5rem 1.5rem 1.5rem 0.25rem;
-            padding: 0.5rem 1rem;
-        }
-        .input-area {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .input-area input {
-            flex-grow: 1;
-            border: none;
-            outline: none;
-            padding: 0.75rem 1.25rem;
-            background-color: #2e2e2e;
-            border-radius: 9999px;
-            color: #e0e0e0;
-        }
-        .input-area button {
-            background-color: #3b82f6;
-            color: white;
-            border-radius: 9999px;
-            padding: 0.75rem 1.25rem;
-            transition: background-color 0.2s;
-        }
-        .input-area button:hover {
-            background-color: #2563eb;
-        }
-        .header {
-            background-color: #1c1c1c;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom-left-radius: 1.5rem;
-            border-bottom-right-radius: 1.5rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        }
-        .control-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .control-buttons button {
-            background-color: #2e2e2e;
-            color: #e0e0e0;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
+        
+        .remote-video {
+            display: none;
+            width: 100%;
+            height: 100%;
         }
         
-        .tooltip {
+        .local-video-file-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: black;
+            z-index: 5;
+            display: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .control-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .share-screen {
+            background-color: #03A9F4;
+            color: white;
+            box-shadow: 0 4px 15px rgba(3, 169, 244, 0.4);
+        }
+        
+        .share-screen:hover {
+            transform: translateY(-2px);
+            background-color: #29B6F6;
+        }
+
+        .toggle-mic {
+            background-color: #F44336;
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+        }
+        
+        .toggle-mic:hover {
+            transform: translateY(-2px);
+            background-color: #E57373;
+        }
+
+        .local-video-button {
+            background-color: #9C27B0;
+            color: white;
+            box-shadow: 0 4px 15px rgba(156, 39, 176, 0.4);
             position: relative;
-            display: inline-block;
+            overflow: hidden;
+            cursor: pointer;
         }
-
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 120px;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px 0;
+        
+        .local-video-button:hover {
+            transform: translateY(-2px);
+            background-color: #AB47BC;
+        }
+        
+        .local-video-button input[type="file"] {
             position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -60px;
+            left: 0;
+            top: 0;
             opacity: 0;
-            transition: opacity 0.3s;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
         }
 
-        .tooltip .tooltiptext::after {
-            content: "";
+        /* Live-stream chat styles */
+        .chat-box {
             position: absolute;
-            top: 100%;
+            bottom: 1rem;
             left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+            transform: translateX(-50%);
+            width: 95%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(5px);
+            border-radius: 0.75rem;
+            padding: 1rem;
         }
 
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
+        .chat-messages {
+            max-height: 120px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .chat-message {
+            background-color: rgba(51, 51, 51, 0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            word-wrap: break-word;
             opacity: 1;
+            transition: opacity 2s ease-out;
+        }
+        
+        .chat-message.fade-out {
+            opacity: 0;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: white;
+        }
+
+        .chat-send-button {
+            padding: 0.75rem;
+            border-radius: 9999px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .chat-send-button:hover {
+            background-color: #66BB6A;
+        }
+        
+        .message-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background-color: #2A2A2A;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .modal-button {
+            padding: 0.75rem 1.5rem;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 9999px;
+            cursor: pointer;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
         }
     </style>
-</head>
-<body class="bg-gray-900 text-white font-sans flex flex-col items-center">
-
-    <!-- Firebase SDK Scripts -->
+    <!-- Firebase Libraries -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, collection, query, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        setLogLevel('debug');
 
         // Global variables provided by the environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-        // This is the correct firebaseConfig provided by the user
-        const firebaseConfig = {
-            apiKey: "AIzaSyCKPARNHk-6Jyl_tJpDrX_taqyktqeSA9s",
-            authDomain: "my-watch-party-app.firebaseapp.com",
-            projectId: "my-watch-party-app",
-            storageBucket: "my-watch-party-app.firebasestorage.app",
-            messagingSenderId: "72645236319",
-            appId: "1:72645236319:web:98959a0f51575902726dea",
-            measurementId: "G-VLQM5PG4WG"
-        };
-        
-        // Add console logs for debugging purposes
-        console.log("Firebase config:", firebaseConfig);
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        // Firestore constants and WebRTC config
-        const ICE_SERVERS = {
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let isHost = false;
+        let isAuthReady = false;
+        const mainChannelDocId = 'main-channel';
+        const messagesCollectionName = 'chat_messages';
+        const signalingCollectionName = 'signaling';
+        let pc = null; // RTCPeerConnection object
+        let localScreenStream = null;
+        let localAudioStream = null;
+        let isLocalVideoPlaying = false;
+
+        // Get the DOM elements
+        const videoElement = document.getElementById('video-player');
+        const remoteVideo = document.getElementById('remote-video');
+        const remoteAudio = document.getElementById('remote-audio');
+        const localVideoFilePlayer = document.getElementById('local-video-file-player');
+        const videoFileInput = document.getElementById('video-file-input');
+        const shareScreenBtn = document.getElementById('share-screen-btn');
+        const toggleMicBtn = document.getElementById('toggle-mic-btn');
+        const inviteBtn = document.getElementById('invite-btn');
+        const authStatus = document.getElementById('auth-status');
+        const userIdDisplay = document.getElementById('user-id');
+        const messageModal = document.getElementById('message-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalOkBtn = document.getElementById('modal-ok-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+
+        // Function to show a custom modal message
+        function showMessage(message) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex';
+        }
+
+        // Close modal
+        modalOkBtn.onclick = () => {
+            messageModal.style.display = 'none';
+        };
+
+        // --- Firebase Initialization and Authentication ---
+        async function setupFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                    showMessage('Firebase configuration not found. Please ensure the app is configured with Firebase.');
+                    return;
+                }
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                authStatus.textContent = 'Auth initializing...';
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        authStatus.textContent = 'Auth successful!';
+                        userIdDisplay.textContent = `User ID: ${userId}`;
+                        isAuthReady = true;
+                        await checkAndSetupHost();
+                        listenForChatMessages();
+                    } else {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase setup failed:", error);
+                authStatus.textContent = 'Auth Error: See console for details.';
+                showMessage(`Firebase setup failed: ${error.message}`);
+            }
+        }
+
+        async function checkAndSetupHost() {
+            if (!db) return;
+            const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists() && docSnap.data().hostId) {
+                isHost = false;
+                shareScreenBtn.textContent = 'Watching Live';
+                shareScreenBtn.disabled = true;
+                showMessage("A watch party is already active. You are a viewer.");
+                // Viewer logic
+                setupPeerConnection();
+                listenForSignaling(docRef);
+            } else {
+                isHost = true;
+                shareScreenBtn.textContent = 'Become Host & Share Screen';
+                shareScreenBtn.disabled = false;
+            }
+        }
+
+        // --- WebRTC Logic ---
+        const servers = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-            ],
+            ]
         };
 
-        // State for the user and app
-        let currentUser = null;
-        let userId = null;
-        let partyId = null;
-        let peerConnection = null;
-        let localScreenStream = null;
-        let localMicStream = null;
-        let micEnabled = false;
-        let isAuthReady = false;
-
-        // UI Elements
-        let chatBox;
-        let messageInput;
-        let sendButton;
-        let partyIdDisplay;
-        let copyButton;
-        let videoPlayer;
-        let inviteButton;
-        let shareButton;
-        let stopShareButton;
-        let micButton;
-        let localVideoInput;
-        
-        // Firestore Collection References (will be set in initApp)
-        let chatCollectionRef = null;
-        let signalingCollectionRef = null;
-        let videoStateDocRef = null;
-        let isSyncing = false; // Flag to prevent feedback loop
-
-        // Function to handle authentication and app initialization
-        async function initApp() {
-            // Assign UI elements after the DOM is fully loaded
-            chatBox = document.getElementById('chat-box');
-            messageInput = document.getElementById('message-input');
-            sendButton = document.getElementById('send-button');
-            partyIdDisplay = document.getElementById('party-id-display');
-            copyButton = document.getElementById('copy-button');
-            videoPlayer = document.getElementById('video-player');
-            inviteButton = document.getElementById('invite-button');
-            shareButton = document.getElementById('share-screen-button');
-            stopShareButton = document.getElementById('stop-sharing-button');
-            micButton = document.getElementById('mic-button');
-            localVideoInput = document.getElementById('local-video-input');
+        function setupPeerConnection() {
+            if (pc) return; // Only set up once
+            pc = new RTCPeerConnection(servers);
             
-            try {
-                // Try anonymous sign-in first, as it's the simplest method for this app.
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Firebase Auth Error:", error);
-                // Check for the specific error and provide more detail to the user
-                let errorMessage = 'An authentication error occurred. Please check the console for more details.';
-                if (error.code === 'auth/configuration-not-found') {
-                    errorMessage = 'Auth Error: `auth/configuration-not-found`. The Firebase project may not have any sign-in methods enabled (e.g., Anonymous). Please check your Firebase Console.';
-                } else if (error.code === 'auth/invalid-custom-token') {
-                    errorMessage = 'Auth Error: Invalid custom token. Please make sure your token is correct.';
-                } else if (error.code === 'auth/network-request-failed') {
-                    errorMessage = 'Auth Error: Network issue. Please check your internet connection.';
-                } else if (error.code === 'auth/operation-not-allowed') {
-                    errorMessage = 'Auth Error: Anonymous sign-in is not enabled in your Firebase project. Please enable it in the Authentication settings.';
-                } else {
-                    errorMessage = `Auth Error: ${error.message}`;
-                }
-                partyIdDisplay.textContent = errorMessage;
-                showMessageBox(errorMessage);
-                return; // Stop app initialization on auth failure
-            }
-
-            // Listen for auth state changes to ensure Firebase is ready
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    userId = user.uid;
-                    isAuthReady = true;
-
-                    const urlParams = new URLSearchParams(window.location.search);
-                    partyId = urlParams.get('partyId') || userId;
-                    
-                    partyIdDisplay.textContent = `Party ID: ${partyId.substring(0, 8)}...`;
-                    console.log("Authentication successful! User ID:", userId);
-                    console.log("Joined Party ID:", partyId);
-
-                    // Set up Firestore collection references based on the party ID
-                    chatCollectionRef = collection(db, `/artifacts/${appId}/public/data/parties/${partyId}/chat_messages`);
-                    signalingCollectionRef = collection(db, `/artifacts/${appId}/public/data/parties/${partyId}/signaling`);
-                    videoStateDocRef = doc(db, `artifacts/${appId}/public/data/parties/${partyId}/video_state/state`);
-
-                    // Start listening to chat messages and video state
-                    setupChatListener();
-                    setupVideoSyncListener();
-                    setupSignalingListener();
-                    setupVideoEventListeners();
-                    setupButtonListeners();
-                } else {
-                    // User is signed out
-                    isAuthReady = false;
-                    userId = null;
-                    partyIdDisplay.textContent = 'Signed Out';
-                }
-            });
-        }
-        
-        // New function to handle all button listeners
-        function setupButtonListeners() {
-            sendButton.addEventListener('click', sendMessage);
-            messageInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
-            });
-            copyButton.addEventListener('click', inviteUser);
-            inviteButton.addEventListener('click', inviteUser);
-            shareButton.addEventListener('click', startScreenShare);
-            stopShareButton.addEventListener('click', stopSharing);
-            micButton.addEventListener('click', toggleMic);
-            localVideoInput.addEventListener('change', loadLocalVideo);
-        }
-
-        // Function to setup the Firestore real-time listener for chat messages
-        function setupChatListener() {
-            const q = query(chatCollectionRef);
-            onSnapshot(q, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    const message = change.doc.data();
-                    if (change.type === "added") {
-                        addMessageToUI(message);
-                    }
-                });
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }, (error) => {
-                console.error("Error listening for chat messages: ", error);
-            });
-        }
-        
-        // Function to set up Firestore real-time listener for video state
-        function setupVideoSyncListener() {
-            onSnapshot(videoStateDocRef, (doc) => {
-                if (doc.exists() && !isSyncing) {
-                    const state = doc.data();
-                    if (state.lastUpdatedBy !== userId) {
-                        isSyncing = true;
-                        if (state.isPlaying) {
-                            videoPlayer.play();
-                        } else {
-                            videoPlayer.pause();
-                        }
-                        // Only update time if the difference is significant to avoid jitter
-                        if (Math.abs(videoPlayer.currentTime - state.currentTime) > 1) {
-                            videoPlayer.currentTime = state.currentTime;
-                        }
-                        isSyncing = false;
-                    }
-                }
-            }, (error) => {
-                console.error("Error listening for video state: ", error);
-            });
-        }
-        
-        // Function to add event listeners to the video player for syncing
-        function setupVideoEventListeners() {
-            videoPlayer.addEventListener('play', () => {
-                if (!isSyncing) {
-                    updateVideoState(true);
-                }
-            });
-            videoPlayer.addEventListener('pause', () => {
-                if (!isSyncing) {
-                    updateVideoState(false);
-                }
-            });
-            videoPlayer.addEventListener('seeked', () => {
-                if (!isSyncing) {
-                    updateVideoState(videoPlayer.paused === false);
-                }
-            });
-        }
-        
-        // Function to update video state in Firestore
-        async function updateVideoState(isPlaying) {
-            try {
-                await setDoc(videoStateDocRef, {
-                    isPlaying: isPlaying,
-                    currentTime: videoPlayer.currentTime,
-                    lastUpdatedBy: userId,
-                    timestamp: serverTimestamp()
-                });
-            } catch (error) {
-                console.error("Error updating video state: ", error);
-            }
-        }
-
-        // Function to setup Firestore real-time listener for WebRTC signaling
-        function setupSignalingListener() {
-            onSnapshot(signalingCollectionRef, async (snapshot) => {
-                snapshot.docChanges().forEach(async (change) => {
-                    const data = change.doc.data();
-                    if (data.senderId === userId) return; // Ignore messages from self
-
-                    if (data.type === 'offer') {
-                        if (!peerConnection) createPeerConnection();
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-                        const answer = await peerConnection.createAnswer();
-                        await peerConnection.setLocalDescription(answer);
-                        if (signalingCollectionRef) {
-                            await addDoc(signalingCollectionRef, { type: answer.type, sdp: answer.sdp, senderId: userId });
-                        }
-                        console.log("Answer sent to Firestore.");
-                    } else if (data.type === 'answer') {
-                        if (peerConnection && peerConnection.signalingState !== 'stable') {
-                             await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-                             console.log("Received and set answer.");
-                        } else {
-                            console.log("Received answer but connection is not in a state to accept it.");
-                        }
-                    } else if (data.type === 'candidate') {
-                        if (peerConnection) {
-                            try {
-                                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                                console.log("Added ICE candidate.");
-                            } catch (e) {
-                                console.error("Error adding received ICE candidate:", e);
-                            }
-                        }
-                    }
-                });
-            }, (error) => {
-                console.error("Error listening for signaling messages: ", error);
-            });
-        }
-
-        // Function to create a new RTCPeerConnection
-        function createPeerConnection() {
-            peerConnection = new RTCPeerConnection(ICE_SERVERS);
-            
-            peerConnection.onicecandidate = async (event) => {
-                if (event.candidate && signalingCollectionRef) {
-                    await addDoc(signalingCollectionRef, {
-                        type: 'candidate',
-                        candidate: event.candidate.toJSON(),
-                        senderId: userId
-                    });
-                }
-            };
-            
-            peerConnection.ontrack = (event) => {
-                console.log("Received a track!", event.track);
+            // Listen for remote tracks and attach them to the video/audio elements
+            pc.ontrack = (event) => {
                 if (event.track.kind === 'video') {
-                    videoPlayer.srcObject = event.streams[0];
-                    videoPlayer.controls = false; // Remote video should not have controls
-                    showMessageBox("Screen share from a friend is now live!");
-                }
-            };
-            
-            peerConnection.onnegotiationneeded = async () => {
-                try {
-                    const offer = await peerConnection.createOffer();
-                    await peerConnection.setLocalDescription(offer);
-                    if (signalingCollectionRef) {
-                        await addDoc(signalingCollectionRef, { type: offer.type, sdp: offer.sdp, senderId: userId });
-                        console.log("Offer sent to Firestore.");
-                    }
-                } catch (e) {
-                    console.error("Error creating and sending offer:", e);
+                    const videoStream = new MediaStream([event.track]);
+                    remoteVideo.srcObject = videoStream;
+                    videoElement.style.display = 'none';
+                    localVideoFilePlayer.style.display = 'none';
+                    remoteVideo.style.display = 'block';
+                    showMessage("Connected to host. Screen sharing is live.");
+                } else if (event.track.kind === 'audio') {
+                    const audioStream = new MediaStream([event.track]);
+                    remoteAudio.srcObject = audioStream;
                 }
             };
         }
 
-        // Function to start screen sharing
-        async function startScreenShare() {
-            if (!isAuthReady) {
-                showMessageBox("Please wait, app is still initializing.");
-                return;
-            }
+        async function createHostOffer() {
             try {
-                // Get display media without audio to prevent conflicts with the separate mic stream
-                localScreenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: true,
-                    audio: false
-                });
-
-                videoPlayer.srcObject = localScreenStream;
-                videoPlayer.controls = true;
-                shareButton.style.display = 'none';
-                stopShareButton.style.display = 'block';
-                
-                // Clear out existing tracks from a previous connection
-                if (peerConnection) {
-                    peerConnection.getSenders().forEach(sender => {
-                        peerConnection.removeTrack(sender);
-                    });
+                // Determine which stream to capture based on what's playing
+                let stream;
+                if (isLocalVideoPlaying && localVideoFilePlayer.srcObject) {
+                    stream = localVideoFilePlayer.captureStream();
+                    localScreenStream = stream;
+                    showMessage("Sharing local video file. Waiting for a viewer to connect...");
+                } else {
+                    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                    localScreenStream = stream;
+                    videoElement.srcObject = stream;
+                    videoElement.style.display = 'block';
+                    localVideoFilePlayer.style.display = 'none';
+                    remoteVideo.style.display = 'none';
+                    showMessage("Screen capture started. Waiting for a viewer to connect...");
                 }
-                
-                if (!peerConnection) createPeerConnection();
-                localScreenStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localScreenStream);
-                });
 
-                // Listen for screen share stop event
-                localScreenStream.getVideoTracks()[0].onended = () => {
-                    stopSharing();
+                setupPeerConnection();
+                stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+                const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
+                
+                // Collect ICE candidates and send to Firestore
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        setDoc(doc(docRef, 'iceCandidates', event.candidate.sdpMid), { candidate: event.candidate.toJSON() }, { merge: true });
+                    }
                 };
-
-                // Remove the old chat messages to start with a fresh screen
-                chatBox.innerHTML = '<div class="text-center text-gray-400 py-2 text-sm">Screen sharing started!</div>';
-
-            } catch (error) {
-                console.error("Error starting screen share:", error);
-                showMessageBox("Screen sharing failed. Please ensure you have granted permission.");
-            }
-        }
-        
-        // Function to stop screen sharing
-        function stopSharing() {
-            if (localScreenStream) {
-                localScreenStream.getTracks().forEach(track => {
-                    // Stop the track
-                    track.stop();
+                
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                
+                await setDoc(docRef, {
+                    hostId: userId,
+                    offer: {
+                        type: offer.type,
+                        sdp: offer.sdp
+                    },
+                    createdAt: Date.now()
                 });
-                localScreenStream = null;
-            }
-            
-            // Remove video track from peer connection
-            if (peerConnection) {
-                peerConnection.getSenders().forEach(sender => {
-                    if (sender.track && sender.track.kind === 'video') {
-                        peerConnection.removeTrack(sender);
+                
+                // Listen for viewer's answer
+                onSnapshot(docRef, async (docSnap) => {
+                    const data = docSnap.data();
+                    if (data?.answer) {
+                        try {
+                            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                            showMessage("Viewer connected successfully!");
+                            // Clean up answer once connected
+                            await updateDoc(docRef, { answer: null });
+                            // Now listen for viewer's ICE candidates
+                            onSnapshot(collection(docRef, 'iceCandidates'), (snapshot) => {
+                                snapshot.docChanges().forEach(change => {
+                                    if (change.type === "added") {
+                                        const candidate = new RTCIceCandidate(change.doc.data().candidate);
+                                        pc.addIceCandidate(candidate);
+                                    }
+                                });
+                            });
+                        } catch(e) {
+                             console.error("Error setting remote description for host:", e);
+                        }
                     }
                 });
-            }
-            
-            // Revert video player to placeholder
-            videoPlayer.srcObject = null;
-            videoPlayer.src = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4";
-            videoPlayer.controls = true;
-            
-            shareButton.style.display = 'block';
-            stopShareButton.style.display = 'none';
-            showMessageBox("Screen sharing has ended.");
-        }
-
-        // Function to start the microphone stream and add it to the peer connection
-        async function startMic() {
-            if (!isAuthReady) {
-                showMessageBox("Please wait, app is still initializing.");
-                return;
-            }
-            try {
-                localMicStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                if (!peerConnection) createPeerConnection();
-                
-                localMicStream.getAudioTracks().forEach(track => {
-                    peerConnection.addTrack(track, localMicStream);
-                });
-                micEnabled = true;
-                micButton.textContent = 'Mic On';
-                micButton.classList.remove('bg-gray-600');
-                micButton.classList.add('bg-green-600');
-                showMessageBox("Microphone is now ON. Your friends in the party can hear you.");
             } catch (error) {
-                console.error("Error getting microphone:", error);
-                showMessageBox("Failed to access your microphone. Please check your browser permissions.");
+                console.error("Error creating host offer:", error);
+                shareScreenBtn.textContent = 'Become Host & Share Screen';
+                shareScreenBtn.disabled = false;
+                showMessage("Failed to share screen. Please ensure you allow permissions.");
             }
         }
 
-        // Function to toggle microphone mute
-        function toggleMic() {
-            if (!localMicStream) {
-                startMic();
-                return;
-            }
-            micEnabled = !micEnabled;
-            localMicStream.getAudioTracks().forEach(track => track.enabled = micEnabled);
-            micButton.textContent = micEnabled ? "Mic On" : "Mic Off";
-            const message = micEnabled ? "Your microphone is now ON." : "Your microphone is now OFF.";
-            micButton.classList.toggle('bg-green-600', micEnabled);
-            micButton.classList.toggle('bg-gray-600', !micEnabled);
-            showMessageBox(message);
-        }
+        async function listenForSignaling(docRef) {
+            onSnapshot(docRef, async (docSnap) => {
+                if (docSnap.exists() && docSnap.data().offer && !isHost) {
+                    const data = docSnap.data();
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    await updateDoc(docRef, {
+                        answer: {
+                            type: answer.type,
+                            sdp: answer.sdp
+                        }
+                    });
 
-        // Function to handle local video file selection
-        function loadLocalVideo(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const videoURL = URL.createObjectURL(file);
-                videoPlayer.src = videoURL;
-                videoPlayer.load();
-                videoPlayer.play();
-                showMessageBox("Local video loaded. Use the 'Share Screen' button to share it with your friend.");
-            }
-        }
-
-        // Function to send a new message
-        async function sendMessage() {
-            if (!isAuthReady) return;
-            const messageText = messageInput.value.trim();
-            if (messageText === '') return;
-
-            try {
-                await addDoc(chatCollectionRef, {
-                    userId: userId,
-                    text: messageText,
-                    timestamp: serverTimestamp(),
-                });
-                messageInput.value = '';
-            } catch (error) {
-                console.error("Error sending message:", error);
-            }
-        }
-
-        // Function to add a message to the UI
-        function addMessageToUI(message) {
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message-row');
-            
-            const isMyMessage = message.userId === userId;
-            const messageBubble = document.createElement('div');
-            messageBubble.textContent = message.text;
-            
-            if (isMyMessage) {
-                messageBubble.classList.add('my-message');
-                messageElement.classList.add('justify-end');
-            } else {
-                messageBubble.classList.add('other-message');
-                messageElement.classList.add('justify-start');
-                const senderName = document.createElement('span');
-                senderName.textContent = `(${message.userId.substring(0, 4)}...): `;
-                senderName.classList.add('text-xs', 'text-gray-400', 'pr-2');
-                messageElement.appendChild(senderName);
-            }
-            
-            messageElement.appendChild(messageBubble);
-            chatBox.appendChild(messageElement);
-        }
-        
-        // Function to handle invite logic
-        function inviteUser() {
-            let inviteUrl;
-            // Check for local file protocol, which can result in 'null' origin
-            if (window.location.origin === 'null') {
-                // For local files, use the full href to include the file path
-                inviteUrl = `${window.location.href}?partyId=${partyId}`;
-            } else {
-                // For a hosted website, use the standard origin
-                inviteUrl = `${window.location.origin}${window.location.pathname}?partyId=${partyId}`;
-            }
-
-            navigator.clipboard.writeText(inviteUrl).then(() => {
-                showMessageBox(`Invitation link copied to clipboard: <br><br><b>${inviteUrl}</b><br><br> Share it with your friend to join this party.`);
-            }).catch(err => {
-                showMessageBox('Could not copy invite link. Please copy it manually.');
-                console.error('Failed to copy text: ', err);
+                    // Collect ICE candidates and send to Firestore
+                    pc.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            setDoc(doc(docRef, 'iceCandidates', event.candidate.sdpMid), { candidate: event.candidate.toJSON() }, { merge: true });
+                        }
+                    };
+                }
             });
         }
 
-        // Simple message box instead of alert
-        function showMessageBox(message) {
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                background-color: #2e2e2e; padding: 2rem; border-radius: 0.75rem;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); z-index: 1000;
-                text-align: center; color: white; max-width: 80%;
-            `;
-            modal.innerHTML = `
-                <p>${message}</p>
-                <button onclick="this.parentNode.remove()" style="margin-top: 1rem; padding: 0.5rem 1.5rem; background-color: #3b82f6; border-radius: 9999px;">OK</button>
-            `;
-            document.body.appendChild(modal);
+        // --- Microphone Logic ---
+        async function toggleMic() {
+            if (!isAuthReady) {
+                showMessage("Authentication not ready. Please wait a moment and try again.");
+                return;
+            }
+
+            setupPeerConnection(); // Ensure peer connection is set up
+
+            if (localAudioStream) {
+                // Mic is on, turn it off
+                localAudioStream.getTracks().forEach(track => {
+                    track.stop();
+                    pc.removeTrack(pc.getSenders().find(sender => sender.track === track));
+                });
+                localAudioStream = null;
+                toggleMicBtn.textContent = 'Turn Mic On';
+                showMessage("Microphone turned off.");
+            } else {
+                // Mic is off, turn it on
+                try {
+                    localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    localAudioStream.getTracks().forEach(track => pc.addTrack(track, localAudioStream));
+                    toggleMicBtn.textContent = 'Turn Mic Off';
+                    showMessage("Microphone turned on.");
+                } catch (error) {
+                    console.error("Error getting audio stream:", error);
+                    showMessage("Could not access microphone. Please check your browser permissions.");
+                }
+            }
+        }
+
+        // --- Local Video Logic ---
+        videoFileInput.onchange = (event) => {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('video/')) {
+                const videoURL = URL.createObjectURL(file);
+                localVideoFilePlayer.src = videoURL;
+                localVideoFilePlayer.style.display = 'block';
+                videoElement.style.display = 'none';
+                remoteVideo.style.display = 'none';
+                isLocalVideoPlaying = true;
+                shareScreenBtn.textContent = 'Share Video';
+                showMessage("Video loaded. Click 'Share Video' to stream it.");
+                localVideoFilePlayer.play();
+            } else {
+                showMessage("Please select a valid video file.");
+                localVideoFilePlayer.style.display = 'none';
+                isLocalVideoPlaying = false;
+                shareScreenBtn.textContent = 'Become Host & Share Screen';
+            }
+        };
+
+        // --- Chat Logic ---
+        function listenForChatMessages() {
+            if (!db || !isAuthReady) {
+                return;
+            }
+            const q = query(collection(db, `artifacts/${appId}/public/data/${messagesCollectionName}`));
+
+            // Listen only for new messages being added
+            onSnapshot(q, (querySnapshot) => {
+                querySnapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const msg = change.doc.data();
+                        const messageEl = document.createElement('div');
+                        messageEl.classList.add('chat-message');
+                        messageEl.textContent = `${msg.userId.substring(0, 4)}: ${msg.message}`;
+                        chatMessages.appendChild(messageEl);
+
+                        // Auto-scroll to the bottom for new messages
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                        // Set a timer to start the fade-out process after a delay
+                        setTimeout(() => {
+                            messageEl.classList.add('fade-out');
+                            // Remove the element from the DOM after the transition is complete
+                            setTimeout(() => messageEl.remove(), 2000); // Wait for the 2s transition
+                        }, 10000); // 10 seconds before starting to fade out
+                    }
+                });
+            });
         }
         
-        // Overwrite the default alert to use our custom message box
-        window.alert = showMessageBox;
+        chatSendBtn.onclick = async () => {
+            const message = chatInput.value.trim();
+            if (!message || !isAuthReady) return;
 
-
-        // Start the app on window load
-        window.onload = initApp;
-
-    </script>
-
-    <!-- App UI -->
-    <div class="container flex flex-col h-screen overflow-hidden">
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/${messagesCollectionName}`), {
+                    userId: userId,
+                    message: message,
+                    timestamp: Date.now(),
+                });
+                chatInput.value = '';
+            } catch (e) {
+                console.error("Error sending message: ", e);
+                showMessage("Failed to send message.");
+            }
+        };
         
-        <!-- Header with app name and invite button -->
+        chatInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                chatSendBtn.click();
+            }
+        });
+
+        // --- Event Handlers ---
+        shareScreenBtn.onclick = () => {
+            if (!isAuthReady) {
+                showMessage("Authentication not ready. Please wait a moment and try again.");
+                return;
+            }
+            isHost = true;
+            shareScreenBtn.textContent = 'You are the Host';
+            shareScreenBtn.disabled = true;
+            createHostOffer();
+        };
+
+        toggleMicBtn.onclick = toggleMic;
+
+        inviteBtn.onclick = () => {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                modalMessage.textContent = 'Link copied to clipboard! Share it with your friends.';
+                messageModal.style.display = 'flex';
+            }).catch(err => {
+                showMessage('Failed to copy the link. Please copy the URL from your browser address bar.');
+                console.error('Copy failed:', err);
+            });
+        };
+        
+        // Initial setup
+        window.onload = setupFirebase;
+    </script>
+</head>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="container">
         <div class="header">
-            <h1 class="text-2xl font-bold text-blue-400">TogetherTime</h1>
-            <div class="flex items-center gap-2">
-                <span id="party-id-display" class="text-sm bg-gray-700 px-3 py-1 rounded-full truncate max-w-[150px]">Loading...</span>
-                <button id="copy-button" class="bg-gray-700 p-2 rounded-full hover:bg-gray-600 transition-colors tooltip">
-                    <span class="tooltiptext">Copy Invite Link</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2h-2.586a1 1 0 01-.707-.293l-1.414-1.414A1 1 0 009.586 1H6a1 1 0 00-1 1v1h1z" />
-                        <path d="M12 5H8v10h4V5z" clip-rule="evenodd" fill-rule="evenodd" />
-                    </svg>
-                </button>
-                <button id="invite-button" class="bg-blue-600 text-white font-medium px-4 py-2 rounded-full hover:bg-blue-500 transition-colors">Invite</button>
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">TogetherTime</h1>
+            <div class="flex items-center gap-4">
+                <span id="auth-status" class="text-xs text-gray-400">Loading...</span>
+                <span id="user-id" class="text-xs text-gray-400"></span>
+                <button id="invite-btn" class="invite-button">Invite</button>
             </div>
         </div>
 
-        <!-- Video Player Section -->
-        <div class="flex-grow flex flex-col justify-center items-center">
-            <div class="video-container w-full max-w-4xl rounded-lg overflow-hidden shadow-2xl">
-                <video id="video-player" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" controls preload="auto">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-            <p class="mt-4 text-sm text-gray-400">Play, pause, and seek together! (Note: This is a placeholder video. In a real app, video playback would be synchronized.)</p>
-            <div class="flex flex-col sm:flex-row gap-4 mt-4 items-center">
-                <label for="local-video-input" class="cursor-pointer bg-gray-600 text-white font-medium px-4 py-2 rounded-full hover:bg-gray-500 transition-colors">
-                    <input type="file" id="local-video-input" accept="video/*" class="hidden">
-                    Load Local Video
-                </label>
-                <div class="flex gap-4">
-                    <button id="share-screen-button" class="bg-green-600 text-white font-medium px-4 py-2 rounded-full hover:bg-green-500 transition-colors">Share Screen</button>
-                    <button id="stop-sharing-button" class="bg-red-600 text-white font-medium px-4 py-2 rounded-full hover:bg-red-500 transition-colors" style="display:none;">Stop Sharing</button>
-                    <button id="mic-button" class="bg-gray-600 text-white font-medium px-4 py-2 rounded-full hover:bg-gray-500 transition-colors">Mic Off</button>
+        <div class="video-container">
+            <!-- These are for streaming/remote content -->
+            <video id="video-player" class="video-player hidden" autoplay playsinline muted></video>
+            <video id="remote-video" class="remote-video" autoplay playsinline></video>
+            <audio id="remote-audio" autoplay playsinline></audio>
+            
+            <!-- This is for playing a local video file -->
+            <video id="local-video-file-player" class="local-video-file-player" autoplay loop muted></video>
+            
+            <!-- Chat box now overlays the video -->
+            <div class="chat-box">
+                <div id="chat-messages" class="chat-messages"></div>
+                <div class="chat-input-container">
+                    <input id="chat-input" type="text" placeholder="Type a message..." class="chat-input">
+                    <button id="chat-send-btn" class="chat-send-button">Send</button>
                 </div>
             </div>
         </div>
-
-        <!-- Chat Section -->
-        <div class="chat-container">
-            <div id="chat-box" class="chat-box scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-                <!-- Chat messages will be dynamically added here -->
-                <div class="text-center text-gray-400 py-2 text-sm">Welcome to your private watch party!</div>
-            </div>
-            <div class="input-area">
-                <input id="message-input" type="text" placeholder="Send a message...">
-                <button id="send-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l.68-1.425a1 1 0 10-1.875-.898L3.545 14.8l.68.226c.2.067.41-.01.526-.188L8 12.35l-3.264 4.566a1 1 0 00.99 1.579L12 17.5l-4-4-2.736 3.832a1 1 0 001.373 1.373L16 11.5l-2-2.828a1 1 0 00-.707-.293l-1.414-1.414a1 1 0 00-.707-.293L9.5 5.5l1.394-1.394z" />
-                    </svg>
-                </button>
-            </div>
-        </div>
         
+        <div class="controls">
+            <button id="share-screen-btn" class="control-button share-screen">Become Host & Share Screen</button>
+            <button id="toggle-mic-btn" class="control-button toggle-mic">Turn Mic On</button>
+            <label class="control-button local-video-button">
+                Choose Video File
+                <input type="file" id="video-file-input" accept="video/*">
+            </label>
+        </div>
+
     </div>
     
+    <!-- Custom Message Modal -->
+    <div id="message-modal" class="message-modal hidden">
+        <div class="modal-content">
+            <p id="modal-message" class="text-lg"></p>
+            <button id="modal-ok-btn" class="modal-button">OK</button>
+        </div>
+    </div>
+
 </body>
 </html>
