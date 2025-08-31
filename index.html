@@ -269,7 +269,17 @@
         // Global variables provided by the environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        
+        // Hardcoded Firebase configuration from your project
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKPARNHk-6Jyl_tJpDrX_taqyktqeSA9s",
+            authDomain: "my-watch-party-app.firebaseapp.com",
+            projectId: "my-watch-party-app",
+            storageBucket: "my-watch-party-app.firebasestorage.app",
+            messagingSenderId: "72645236319",
+            appId: "1:72645236319:web:98959a0f51575902726dea"
+        };
+        
 
         let app;
         let db;
