@@ -1,4 +1,4 @@
-<!DOCTYPE-html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -416,19 +416,35 @@
             const docRef = doc(db, `artifacts/${appId}/public/data/${signalingCollectionName}`, mainChannelDocId);
 
             onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists() && docSnap.data().hostId) {
-                    // A host is active
-                    isHost = false;
-                    shareScreenBtn.textContent = 'Watching Live';
-                    shareScreenBtn.disabled = true;
-                    if (typeof pc === 'undefined' || pc === null) {
-                        // Only show message and set up if not already connected
-                        showMessage("A watch party is already active. You are a viewer.");
+                if (!userId) {
+                    console.log("User ID is not set. Awaiting auth state.");
+                    return;
+                }
+
+                const data = docSnap.data();
+                if (docSnap.exists() && data.hostId) {
+                    if (data.hostId === userId) {
+                        // I am the host
+                        isHost = true;
+                        isSharing = true;
+                        shareScreenBtn.classList.add('stop-sharing');
+                        shareScreenBtn.textContent = 'Stop Sharing';
+                        shareScreenBtn.disabled = false;
+                        videoElement.style.display = 'block';
+                        remoteVideo.style.display = 'none';
+                        showMessage("You are the host. Screen is being shared.");
+                    } else {
+                        // A different user is the host
+                        isHost = false;
+                        isSharing = false;
+                        shareScreenBtn.textContent = 'Watching Live';
+                        shareScreenBtn.disabled = true;
+                        // Viewer logic starts here
                         setupPeerConnection();
                         listenForSignaling(docRef);
                     }
                 } else {
-                    // No host is active
+                    // No host is active, or the session was ended
                     isHost = true;
                     isSharing = false;
                     shareScreenBtn.classList.remove('stop-sharing');
@@ -442,7 +458,7 @@
                          shareScreenBtn.disabled = false;
                     }
 
-                    // Clean up UI and connection for viewers
+                    // Clean up UI and connection for viewers and potential hosts
                     videoElement.style.display = 'none';
                     localVideoFilePlayer.style.display = 'none';
                     remoteVideo.style.display = 'none';
@@ -497,12 +513,14 @@
             
             // Listen for remote tracks and attach them to the video/audio elements
             pc.ontrack = (event) => {
+                console.log("Received a remote track. Kind:", event.track.kind);
                 if (event.track.kind === 'video') {
                     const videoStream = new MediaStream([event.track]);
                     remoteVideo.srcObject = videoStream;
                     videoElement.style.display = 'none';
                     localVideoFilePlayer.style.display = 'none';
                     remoteVideo.style.display = 'block';
+                    showMessage("Connected to host. Screen sharing is live.");
                 } else if (event.track.kind === 'audio') {
                     const audioStream = new MediaStream([event.track]);
                     remoteAudio.srcObject = audioStream;
@@ -568,7 +586,7 @@
                 // Listen for viewer's answer
                 onSnapshot(docRef, async (docSnap) => {
                     const data = docSnap.data();
-                    if (data?.answer) {
+                    if (data?.answer && data.hostId === userId) {
                         try {
                             await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
                             showMessage("Viewer connected successfully!");
@@ -744,14 +762,10 @@
                 return;
             }
             
-            if (isHost && !isSharing) {
-                isSharing = true;
-                shareScreenBtn.classList.add('stop-sharing');
-                shareScreenBtn.textContent = 'Stop Sharing';
-                shareScreenBtn.disabled = true;
-                createHostOffer();
-            } else if (isHost && isSharing) {
+            if (isSharing) {
                 stopSharing();
+            } else if (isHost) {
+                createHostOffer();
             }
         };
 
