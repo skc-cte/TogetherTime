@@ -1,229 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TogetherTime</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #1a1a2e;
-            color: white;
-            font-family: 'Inter', sans-serif;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        .message-box {
-            background-color: #2a2a44;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TogetherTime</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #1a1a2e; color: white; font-family: 'Inter', sans-serif; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  </style>
 </head>
 <body class="bg-[#1a1a2e] text-white">
-    <div class="flex flex-col h-screen">
-        <!-- Header -->
-        <header class="p-4 flex justify-between items-center bg-[#2a2a44] rounded-b-xl shadow-lg">
-            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">TogetherTime</h1>
-            <div id="auth-status" class="flex items-center space-x-2">
-                <span id="auth-text" class="text-green-400">Auth Initializing...</span>
-                <span id="user-id-display" class="bg-gray-700 rounded-full px-3 py-1 text-sm hidden"></span>
-                <a id="invite-link" href="#" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300">Invite</a>
-            </div>
-        </header>
+  <div class="flex flex-col h-screen">
+    <!-- Header -->
+    <header class="p-4 flex justify-between items-center bg-[#2a2a44] rounded-b-xl shadow-lg">
+      <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">TogetherTime</h1>
+      <div id="auth-status" class="flex items-center space-x-2">
+        <span id="auth-text" class="text-green-400">Auth Initializing...</span>
+        <span id="user-id-display" class="bg-gray-700 rounded-full px-3 py-1 text-sm hidden"></span>
+        <a id="invite-link" href="#" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300">Invite</a>
+      </div>
+    </header>
 
-        <!-- Main Content -->
-        <main class="flex-1 flex flex-col items-center justify-center p-4">
-            <div id="video-container" class="relative w-full h-full bg-black rounded-xl overflow-hidden shadow-2xl flex items-center justify-center">
-                <video id="remote-video" class="w-full h-full object-contain" autoplay playsinline></video>
-                <div id="loading-message" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-xl text-white text-2xl">
-                    Waiting for host to share screen...
-                </div>
-            </div>
-        </main>
-        
-        <!-- Action Buttons (Host controls) -->
-        <footer class="p-4 flex justify-center space-x-4">
-            <button id="become-host" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Become Host & Share Screen</button>
-            <button id="turn-mic-on" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Turn Mic On</button>
-            <button id="choose-video" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Choose Video File</button>
-        </footer>
-    </div>
-    
-    <!-- Custom Modal for Alerts -->
-    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-[#2a2a44] rounded-lg p-6 shadow-xl w-80">
-            <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
-            <p id="modal-message" class="text-gray-300 mb-4"></p>
-            <button id="modal-ok-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full">OK</button>
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4">
+      <div id="video-container" class="relative w-full h-full bg-black rounded-xl overflow-hidden shadow-2xl flex items-center justify-center">
+        <video id="remote-video" class="w-full h-full object-contain" autoplay playsinline></video>
+        <div id="loading-message" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-xl text-white text-2xl">
+          Waiting for host to share screen...
         </div>
+      </div>
+    </main>
+
+    <!-- Action Buttons (Host controls) -->
+    <footer class="p-4 flex flex-wrap justify-center gap-3">
+      <button id="become-host" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+        Become Host & Share Screen
+      </button>
+      <button id="turn-mic-on" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">
+        Turn Mic On
+      </button>
+      <button id="stop-session" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105" disabled>
+        Stop Session
+      </button>
+    </footer>
+  </div>
+
+  <!-- Custom Modal for Alerts -->
+  <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-[#2a2a44] rounded-lg p-6 shadow-xl w-80">
+      <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
+      <p id="modal-message" class="text-gray-300 mb-4"></p>
+      <button id="modal-ok-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full">OK</button>
     </div>
+  </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth,
+      signInAnonymously,
+      signInWithCustomToken,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      onSnapshot,
+      collection,
+      addDoc,
+      serverTimestamp,
+      deleteDoc,
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    // ===== Canvas/Host Environment Variables =====
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        let db, auth, userId;
-        const hostDocPath = `/artifacts/${appId}/public/data/host_session/current_host`;
+    // ===== Global State =====
+    let db, auth, userId;
+    let role = 'guest'; // 'host' | 'guest'
+    let pc = null;      // RTCPeerConnection
+    let localStream = null;
+    let remoteStream = null;
 
-        // --- UI Elements ---
-        const authTextEl = document.getElementById('auth-text');
-        const userIdDisplayEl = document.getElementById('user-id-display');
-        const remoteVideoEl = document.getElementById('remote-video');
-        const loadingMessageEl = document.getElementById('loading-message');
-        const inviteLinkEl = document.getElementById('invite-link');
-        const becomeHostBtn = document.getElementById('become-host');
+    // Firestore document structure (collection/doc pairs)
+    // artifacts/{appId}/public/data/host_session -> single session doc per appId
+    const hostDocRefPath = ["artifacts", appId, "public", "data", "host_session"]; // valid c/d/c/d
 
-        // --- Custom Modal Functions ---
-        const modal = document.getElementById('custom-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalOkBtn = document.getElementById('modal-ok-btn');
+    // ===== UI =====
+    const authTextEl = document.getElementById('auth-text');
+    const userIdDisplayEl = document.getElementById('user-id-display');
+    const remoteVideoEl = document.getElementById('remote-video');
+    const loadingMessageEl = document.getElementById('loading-message');
+    const inviteLinkEl = document.getElementById('invite-link');
+    const becomeHostBtn = document.getElementById('become-host');
+    const turnMicOnBtn = document.getElementById('turn-mic-on');
+    const stopSessionBtn = document.getElementById('stop-session');
 
-        function showModal(title, message) {
-            modalTitle.textContent = title;
-            modalMessage.textContent = message;
-            modal.classList.remove('hidden');
+    // Modal helpers
+    const modal = document.getElementById('custom-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    const modalOkBtn = document.getElementById('modal-ok-btn');
+
+    function showModal(title, message) {
+      modalTitle.textContent = title;
+      modalMessage.textContent = message;
+      modal.classList.remove('hidden');
+    }
+    modalOkBtn.onclick = () => modal.classList.add('hidden');
+
+    // ===== WebRTC helpers =====
+    const rtcConfig = { iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }] };
+
+    function createPeerConnection() {
+      pc = new RTCPeerConnection(rtcConfig);
+      remoteStream = new MediaStream();
+      remoteVideoEl.srcObject = remoteStream;
+
+      pc.ontrack = (event) => {
+        event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
+        loadingMessageEl.classList.add('hidden');
+      };
+      pc.oniceconnectionstatechange = () => {
+        if (['failed', 'disconnected', 'closed'].includes(pc.iceConnectionState)) {
+          console.log('ICE state:', pc.iceConnectionState);
         }
+      };
 
-        modalOkBtn.onclick = () => {
-            modal.classList.add('hidden');
+      return pc;
+    }
+
+    async function addLocalTracksToPc(stream) {
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+    }
+
+    async function cleanupSession() {
+      try {
+        if (pc) { pc.getSenders().forEach(s => { try { s.track && s.track.stop(); } catch (_) {} }); pc.close(); }
+        if (localStream) localStream.getTracks().forEach(t => t.stop());
+      } catch (e) { console.warn('cleanup error', e); }
+      pc = null; localStream = null; remoteStream = null;
+    }
+
+    // ===== Firebase Init/Auth =====
+    async function initializeFirebase() {
+      if (!firebaseConfig) {
+        showModal("Configuration Error", "Firebase configuration is not available. Please ensure the app is properly configured.");
+        console.error("Firebase config not found.");
+        return;
+      }
+
+      try {
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteId = urlParams.get('inviteId'); // optional, informational
+
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            userId = user.uid;
+            authTextEl.textContent = 'Auth successful!';
+            userIdDisplayEl.textContent = `User ID: ${userId}`;
+            userIdDisplayEl.classList.remove('hidden');
+            becomeHostBtn.disabled = false;
+
+            const inviteUrl = `${window.location.origin}${window.location.pathname}?inviteId=${userId}`;
+            inviteLinkEl.href = inviteUrl;
+
+            // Auto-join as guest if there is an active offer
+            await startGuestListener(inviteId);
+          } else {
+            try {
+              if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+              } else {
+                await signInAnonymously(auth);
+              }
+            } catch (err) {
+              console.warn('Primary sign-in failed, falling back to anonymous:', err);
+              await signInAnonymously(auth);
+            }
+          }
+        });
+      } catch (error) {
+        showModal("Connection Error", `Failed to connect to Firebase: ${error.message}`);
+        console.error("Firebase initialization failed:", error);
+      }
+    }
+
+    // ===== Host flow =====
+    becomeHostBtn.addEventListener('click', async () => {
+      if (!userId) {
+        showModal("Authentication Error", "Please wait for authentication to complete before becoming a host.");
+        return;
+      }
+
+      role = 'host';
+      const hostDocRef = doc(db, ...hostDocRefPath);
+
+      try {
+        // Create screen share stream
+        localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        if (!localStream) throw new Error('No screen stream');
+
+        loadingMessageEl.classList.add('hidden');
+        // Show local preview for host
+        remoteVideoEl.srcObject = localStream;
+
+        createPeerConnection();
+        await addLocalTracksToPc(localStream);
+
+        // ICE candidates -> callerCandidates subcollection
+        const callerCandidates = collection(hostDocRef, 'callerCandidates');
+        pc.onicecandidate = async (event) => {
+          if (event.candidate) {
+            await addDoc(callerCandidates, event.candidate.toJSON());
+          }
         };
 
-        // --- Firebase Initialization and Authentication ---
-        async function initializeFirebase() {
-            if (!firebaseConfig) {
-                showModal("Configuration Error", "Firebase configuration is not available. Please ensure the app is properly configured.");
-                console.error("Firebase config not found. Host this app via a platform that provides the config.");
-                return;
-            }
+        // Create and store offer
+        const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+        await pc.setLocalDescription(offer);
 
-            try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
+        await setDoc(hostDocRef, {
+          hostId: userId,
+          streamActive: true,
+          offer: { sdp: offer.sdp, type: offer.type },
+          answer: null,
+          createdAt: serverTimestamp(),
+        }, { merge: true });
 
-                // Set up authentication listener to get the user ID
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        authTextEl.textContent = 'Auth successful!';
-                        userIdDisplayEl.textContent = `User ID: ${userId}`;
-                        userIdDisplayEl.classList.remove('hidden');
-                        
-                        // Update the invite link with the current user's ID
-                        const inviteUrl = `${window.location.origin}${window.location.pathname}?inviteId=${userId}`;
-                        inviteLinkEl.href = inviteUrl;
-
-                        console.log(`User authenticated with UID: ${userId}`);
-
-                        // Start listening for host data after authentication is complete
-                        listenForHostData();
-                    } else {
-                        console.log("No user signed in. Attempting to sign in...");
-                        // Use a custom token if available, otherwise sign in anonymously
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    }
-                });
-            } catch (error) {
-                showModal("Connection Error", `Failed to connect to Firebase: ${error.message}`);
-                console.error("Firebase initialization failed:", error);
-            }
-        }
-        
-        // --- WebRTC Logic (Host) ---
-        becomeHostBtn.addEventListener('click', async () => {
-            if (!userId) {
-                showModal("Authentication Error", "Please wait for authentication to complete before becoming a host.");
-                return;
-            }
-
-            const hostDocRef = doc(db, hostDocPath);
-            try {
-                // Try to get screen share stream
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                if (stream) {
-                    // Set the local video source to the screen share
-                    remoteVideoEl.srcObject = stream;
-                    loadingMessageEl.classList.add('hidden');
-
-                    // Update Firestore to signal that a host is now active
-                    await setDoc(hostDocRef, {
-                        hostId: userId,
-                        // In a real app, you would use WebRTC to share the stream.
-                        // For this example, we just signal that a host is active.
-                        streamActive: true, 
-                        // You'd also store signaling data here
-                    }, { merge: true });
-
-                    showModal("Hosting Session", "You are now the host. Your screen is being shared. Share the invite link with your friends.");
-                    console.log(`Host session started by user: ${userId}`);
-                } else {
-                    showModal("Screen Share Failed", "Failed to get a screen sharing stream. Please ensure you granted permission.");
-                }
-            } catch (error) {
-                showModal("Error", `An error occurred while starting the session: ${error.message}`);
-                console.error("Error starting host session:", error);
-            }
+        // Listen for guest answer
+        onSnapshot(hostDocRef, async (snap) => {
+          const data = snap.data();
+          if (!pc || pc.currentRemoteDescription) return;
+          if (data?.answer) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            console.log('Host set remote description (answer).');
+          }
         });
 
-        // --- Listen for Host Data in Firestore ---
-        function listenForHostData() {
-            const hostDocRef = doc(db, hostDocPath);
+        // Listen for callee (guest) ICE candidates
+        const calleeCandidates = collection(hostDocRef, 'calleeCandidates');
+        onSnapshot(calleeCandidates, (snap) => {
+          snap.docChanges().forEach(async (change) => {
+            if (change.type === 'added') {
+              const candidate = new RTCIceCandidate(change.doc.data());
+              try { await pc.addIceCandidate(candidate); } catch (e) { console.warn('Host addIceCandidate failed', e); }
+            }
+          });
+        });
 
-            onSnapshot(hostDocRef, (docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const hostData = docSnapshot.data();
-                    console.log("Host data received:", hostData);
-                    
-                    if (hostData.hostId) {
-                        if (hostData.hostId === userId) {
-                            // Current user is the host, do nothing
-                            return;
-                        } else {
-                            // Another user is the host, display a message
-                            loadingMessageEl.classList.add('hidden');
-                            remoteVideoEl.srcObject = null; // Clear local stream
-                            showModal("Watch Party Active", `A watch party is already active, hosted by ${hostData.hostId}.`);
-                        }
-                    }
-                } else {
-                    // No active host session found
-                    console.log("No active host session found.");
-                    loadingMessageEl.classList.remove('hidden');
-                    remoteVideoEl.srcObject = null;
-                    showModal("No Host Found", "No active host session found. Please click 'Become Host' to start a session.");
-                }
-            }, (error) => {
-                showModal("Data Error", `Failed to listen for host data: ${error.message}`);
-                console.error("Error fetching host document:", error);
-            });
+        stopSessionBtn.disabled = false;
+        showModal('Hosting Session', 'You are now the host. Share the invite link with your friends.');
+      } catch (error) {
+        console.error('Error starting host session:', error);
+        showModal('Error', `An error occurred while starting the session: ${error.message}`);
+      }
+    });
+
+    // ===== Guest flow =====
+    async function startGuestListener(inviteId) {
+      const hostDocRef = doc(db, ...hostDocRefPath);
+
+      // Snapshot the host session doc
+      onSnapshot(hostDocRef, async (snap) => {
+        if (!snap.exists()) {
+          // No session yet
+          loadingMessageEl.classList.remove('hidden');
+          return;
+        }
+        const data = snap.data();
+
+        // If a session exists and we are not the host, prepare to join
+        if (data?.offer && role !== 'host') {
+          // Only join once
+          if (pc) return;
+          role = 'guest';
+          await joinAsGuest(hostDocRef, data.offer);
         }
 
-        // Initialize the app on window load
-        window.onload = initializeFirebase;
+        // If the host stopped the session
+        if (data?.streamActive === false) {
+          await cleanupSession();
+          loadingMessageEl.classList.remove('hidden');
+        }
+      }, (error) => {
+        console.error('Error listening to host session:', error);
+      });
+    }
 
-    </script>
+    async function joinAsGuest(hostDocRef, offer) {
+      try {
+        createPeerConnection();
+
+        // Guests usually only receive, but we still set up pc for two-way ICE
+        pc.onicecandidate = async (event) => {
+          if (event.candidate) {
+            const calleeCandidates = collection(hostDocRef, 'calleeCandidates');
+            await addDoc(calleeCandidates, event.candidate.toJSON());
+          }
+        };
+
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        await updateDoc(hostDocRef, {
+          answer: { sdp: answer.sdp, type: answer.type },
+        });
+
+        // Listen for caller ICE candidates
+        const callerCandidates = collection(hostDocRef, 'callerCandidates');
+        onSnapshot(callerCandidates, (snap) => {
+          snap.docChanges().forEach(async (change) => {
+            if (change.type === 'added') {
+              const candidate = new RTCIceCandidate(change.doc.data());
+              try { await pc.addIceCandidate(candidate); } catch (e) { console.warn('Guest addIceCandidate failed', e); }
+            }
+          });
+        });
+
+        // UI
+        loadingMessageEl.classList.add('hidden');
+      } catch (e) {
+        console.error('joinAsGuest error:', e);
+        showModal('Join Error', e.message);
+      }
+    }
+
+    // ===== Buttons: Mic + Stop =====
+    turnMicOnBtn.addEventListener('click', async () => {
+      try {
+        const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!mic) return;
+        if (role === 'host') {
+          if (!pc) { createPeerConnection(); }
+          if (localStream) { localStream.addTrack(mic.getAudioTracks()[0]); }
+          if (pc) { pc.addTrack(mic.getAudioTracks()[0], localStream || mic); }
+          showModal('Microphone', 'Microphone enabled for the session.');
+        } else {
+          showModal('Microphone', 'You are a guest. Mic is optional and not sent unless host expects two-way audio.');
+        }
+      } catch (e) {
+        showModal('Microphone Error', e.message);
+      }
+    });
+
+    stopSessionBtn.addEventListener('click', async () => {
+      const hostDocRef = doc(db, ...hostDocRefPath);
+      try {
+        await updateDoc(hostDocRef, { streamActive: false });
+      } catch (_) {}
+      try {
+        // Clean candidate subcollections
+        const callerCandidates = collection(hostDocRef, 'callerCandidates');
+        const calleeCandidates = collection(hostDocRef, 'calleeCandidates');
+        // Best-effort purge (requires security rules to allow)
+        // Note: Firestore client has no direct deleteAll; this is best-effort placeholder.
+      } catch (_) {}
+      await cleanupSession();
+      stopSessionBtn.disabled = true;
+      loadingMessageEl.classList.remove('hidden');
+      showModal('Session Stopped', 'Hosting session ended.');
+    });
+
+    // ===== Unload cleanup =====
+    window.addEventListener('beforeunload', async () => {
+      try {
+        await cleanupSession();
+      } catch (_) {}
+    });
+
+    // ===== Start =====
+    window.onload = initializeFirebase;
+  </script>
 </body>
 </html>
