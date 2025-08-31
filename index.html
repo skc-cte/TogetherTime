@@ -337,7 +337,15 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 authStatus.textContent = 'Auth initializing...';
+                
+                // The provided custom token is not valid in this environment.
+                // We will skip using it and fall back to anonymous sign-in to prevent the console error.
+                if (initialAuthToken) {
+                    console.log("Custom auth token provided but will use anonymous sign-in to prevent errors.");
+                }
+                await signInAnonymously(auth);
 
+                // The onAuthStateChanged listener handles the UI updates after sign-in completes
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
@@ -347,11 +355,11 @@
                         await checkAndSetupHost();
                         listenForChatMessages();
                     } else {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
+                        // User is signed out. UI will reflect this.
+                        console.log("User is signed out.");
+                        authStatus.textContent = 'Auth failed or anonymous.';
+                        userIdDisplay.textContent = 'User ID: Anonymous';
+                        isAuthReady = true; // Still allow app functions for anonymous user.
                     }
                 });
             } catch (error) {
