@@ -89,6 +89,7 @@
         const remoteVideoEl = document.getElementById('remote-video');
         const loadingMessageEl = document.getElementById('loading-message');
         const inviteLinkEl = document.getElementById('invite-link');
+        const becomeHostBtn = document.getElementById('become-host');
 
         // --- Custom Modal Functions ---
         const modal = document.getElementById('custom-modal');
@@ -152,10 +153,39 @@
         }
         
         // --- WebRTC Logic (Host) ---
-        // Placeholder for future host functionality.
-        // This button won't do anything yet as this file is for the viewer.
-        document.getElementById('become-host').addEventListener('click', () => {
-             showModal("Feature Not Available", "This version of the app is a viewer. Please use the host's app to start a session.");
+        becomeHostBtn.addEventListener('click', async () => {
+            if (!userId) {
+                showModal("Authentication Error", "Please wait for authentication to complete before becoming a host.");
+                return;
+            }
+
+            const hostDocRef = doc(db, hostDocPath);
+            try {
+                // Try to get screen share stream
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                if (stream) {
+                    // Set the local video source to the screen share
+                    remoteVideoEl.srcObject = stream;
+                    loadingMessageEl.classList.add('hidden');
+
+                    // Update Firestore to signal that a host is now active
+                    await setDoc(hostDocRef, {
+                        hostId: userId,
+                        // In a real app, you would use WebRTC to share the stream.
+                        // For this example, we just signal that a host is active.
+                        streamActive: true, 
+                        // You'd also store signaling data here
+                    }, { merge: true });
+
+                    showModal("Hosting Session", "You are now the host. Your screen is being shared. Share the invite link with your friends.");
+                    console.log(`Host session started by user: ${userId}`);
+                } else {
+                    showModal("Screen Share Failed", "Failed to get a screen sharing stream. Please ensure you granted permission.");
+                }
+            } catch (error) {
+                showModal("Error", `An error occurred while starting the session: ${error.message}`);
+                console.error("Error starting host session:", error);
+            }
         });
 
         // --- Listen for Host Data in Firestore ---
@@ -167,25 +197,23 @@
                     const hostData = docSnapshot.data();
                     console.log("Host data received:", hostData);
                     
-                    // Check for a stream in the host data
-                    if (hostData.streamId && hostData.hostId) {
-                        loadingMessageEl.classList.add('hidden');
-                        remoteVideoEl.src = `https://stream.example.com/${hostData.streamId}`; // This is a placeholder
-                        remoteVideoEl.play().catch(e => console.error("Video playback failed:", e));
-                        showModal("Watch Party Active", `A watch party is already active, hosted by ${hostData.hostId}.`);
-                    } else {
-                        // The host document exists but doesn't have a stream yet
-                        loadingMessageEl.classList.remove('hidden');
-                        remoteVideoEl.pause();
-                        remoteVideoEl.src = '';
-                        console.log("Host session active, but no stream found.");
+                    if (hostData.hostId) {
+                        if (hostData.hostId === userId) {
+                            // Current user is the host, do nothing
+                            return;
+                        } else {
+                            // Another user is the host, display a message
+                            loadingMessageEl.classList.add('hidden');
+                            remoteVideoEl.srcObject = null; // Clear local stream
+                            showModal("Watch Party Active", `A watch party is already active, hosted by ${hostData.hostId}.`);
+                        }
                     }
                 } else {
+                    // No active host session found
                     console.log("No active host session found.");
                     loadingMessageEl.classList.remove('hidden');
-                    remoteVideoEl.pause();
-                    remoteVideoEl.src = '';
-                    showModal("No Host Found", "No active host session found. Please wait for a host to start sharing their screen.");
+                    remoteVideoEl.srcObject = null;
+                    showModal("No Host Found", "No active host session found. Please click 'Become Host' to start a session.");
                 }
             }, (error) => {
                 showModal("Data Error", `Failed to listen for host data: ${error.message}`);
