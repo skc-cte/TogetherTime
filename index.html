@@ -269,6 +269,7 @@
         // Global variables provided by the environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
 
         let app;
         let db;
@@ -315,35 +316,24 @@
 
         // --- Firebase Initialization and Authentication ---
         async function setupFirebase() {
-            // This firebaseConfig object has been updated with your values.
-            const firebaseConfig = {
-                apiKey: "AIzaSyCKPARNHk-6Jyl_tJpDrX_taqyktqeSA9s",
-                authDomain: "my-watch-party-app.firebaseapp.com",
-                projectId: "my-watch-party-app",
-                storageBucket: "my-watch-party-app.firebasestorage.app",
-                messagingSenderId: "72645236319",
-                appId: "1:72645236319:web:98959a0f51575902726dea",
-                measurementId: "G-VLQM5PG4WG"
-            };
+            if (!firebaseConfig) {
+                showMessage('Firebase configuration is missing. Please ensure the app is configured with Firebase.');
+                return;
+            }
 
             console.log("Using Firebase config:", firebaseConfig);
 
             try {
-                if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-                    showMessage('Firebase configuration is incomplete. Please ensure the app is configured with Firebase.');
-                    return;
-                }
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 authStatus.textContent = 'Auth initializing...';
                 
-                // The provided custom token is not valid in this environment.
-                // We will skip using it and fall back to anonymous sign-in to prevent the console error.
                 if (initialAuthToken) {
-                    console.log("Custom auth token provided but will use anonymous sign-in to prevent errors.");
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
                 }
-                await signInAnonymously(auth);
 
                 // The onAuthStateChanged listener handles the UI updates after sign-in completes
                 onAuthStateChanged(auth, async (user) => {
