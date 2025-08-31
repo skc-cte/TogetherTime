@@ -2,172 +2,177 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Together Time</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TogetherTime</title>
   <style>
     body {
       margin: 0;
+      background-color: #000;
+      color: white;
+      font-family: Arial, sans-serif;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      background-color: #000;
-      color: #fff;
-      font-family: Arial, sans-serif;
       height: 100vh;
     }
-    video {
-      max-width: 100%;
-      max-height: 80vh;
-      background: #111;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    #player {
+      width: 80%;
+      height: 60%;
+      display: none;
     }
     #controls {
-      margin-top: 15px;
-      display: flex;
-      gap: 10px;
+      margin-top: 20px;
+      display: none;
     }
     button {
-      padding: 10px 20px;
-      font-size: 14px;
+      background-color: #22c55e;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
       cursor: pointer;
-      font-weight: bold;
-      background: #4CAF50;
-      color: white;
+      margin: 0 5px;
     }
-    button:hover {
-      background: #45a049;
-    }
-    #invite {
+    #share-link {
       margin-top: 10px;
-      font-size: 14px;
-      color: #0f0;
+      display: none;
+    }
+    #error-box {
+      background: #1e1e2f;
+      padding: 20px;
+      border-radius: 10px;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h2>🎥 Together Time</h2>
-  <video id="remoteVideo" autoplay playsinline></video>
-  <div id="controls">
-    <button id="hostBtn">Host Session</button>
-    <button id="joinBtn">Join Session</button>
-    <button id="stopBtn" style="display:none; background:#e53935;">Stop</button>
+  <div id="error-box">
+    <p><b>Configuration Error</b></p>
+    <p>Firebase configuration is not available. Please ensure the app is properly configured.</p>
+    <button onclick="location.reload()">OK</button>
   </div>
-  <div id="invite"></div>
+
+  <div id="main-content">
+    <div id="player"></div>
+    <div id="controls">
+      <button id="playBtn">Play</button>
+      <button id="pauseBtn">Pause</button>
+    </div>
+    <div id="share-link">
+      Share this link with friends: 
+      <input type="text" id="inviteLink" readonly style="width:60%">
+    </div>
+  </div>
+
+  <!-- Firebase + YouTube -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, collection, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-    // ✅ Your Firebase Config
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCKPARNHk-6Jyl_tJpDrX_taqyktqeSA9s",
-  authDomain: "my-watch-party-app.firebaseapp.com",
-  projectId: "my-watch-party-app",
-  storageBucket: "my-watch-party-app.appspot.com",
-  messagingSenderId: "72645236319",
-  appId: "1:72645236319:web:98959a0f51575902726dea",
-  measurementId: "G-VLQM5PG4WG"
+    // ✅ Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCKPARNHk-6Jyl_tJpDrX_taqyktqeSA9s",
+      authDomain: "my-watch-party-app.firebaseapp.com",
+      projectId: "my-watch-party-app",
+      storageBucket: "my-watch-party-app.firebasestorage.app",
+      messagingSenderId: "72645236319",
+      appId: "1:72645236319:web:98959a0f51575902726dea",
+      measurementId: "G-VLQM5PG4WG"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth();
-    await signInAnonymously(auth);
+    let app, db;
+    try {
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+    } catch (e) {
+      document.getElementById("main-content").style.display = "none";
+      document.getElementById("error-box").style.display = "block";
+    }
 
-    const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-    let pc = new RTCPeerConnection(servers);
-    let localStream;
-    const remoteVideo = document.getElementById("remoteVideo");
+    // Room / Host logic
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get("roomId");
 
-    document.getElementById("hostBtn").onclick = async () => {
-      localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      document.getElementById("stopBtn").style.display = "inline-block";
+    let isHost = false;
+    let roomRef;
 
-      const callDoc = doc(collection(db, "calls"));
-      const offerCandidates = collection(callDoc, "offerCandidates");
-      const answerCandidates = collection(callDoc, "answerCandidates");
+    if (roomId) {
+      // Guest flow
+      isHost = false;
+      roomRef = doc(db, "rooms", roomId);
+      console.log("Joining room as guest:", roomId);
+    } else {
+      // Host flow
+      isHost = true;
+      roomRef = doc(collection(db, "rooms"));
+      console.log("Creating room as host:", roomRef.id);
 
-      pc.onicecandidate = e => {
-        if (e.candidate) addDoc(offerCandidates, e.candidate.toJSON());
-      };
+      // Update URL so host can share
+      window.history.replaceState(null, "TogetherTime", `?roomId=${roomRef.id}`);
+      document.getElementById("share-link").style.display = "block";
+      document.getElementById("inviteLink").value = window.location.href;
+    }
 
-      const offerDesc = await pc.createOffer();
-      await pc.setLocalDescription(offerDesc);
-      await setDoc(callDoc, { offer: { type: offerDesc.type, sdp: offerDesc.sdp } });
+    // YouTube player
+    let player;
+    window.onYouTubeIframeAPIReady = () => {
+      player = new YT.Player("player", {
+        height: "390",
+        width: "640",
+        videoId: "dQw4w9WgXcQ", // default video (replace later)
+        events: {
+          onReady: onPlayerReady,
+        },
+      });
+    };
 
-      document.getElementById("invite").innerText =
-        "Invite link: " + window.location.href + "?id=" + callDoc.id;
+    function onPlayerReady() {
+      document.getElementById("player").style.display = "block";
+      if (isHost) {
+        document.getElementById("controls").style.display = "block";
+      }
+    }
 
-      onSnapshot(callDoc, snapshot => {
-        const data = snapshot.data();
-        if (data?.answer && !pc.currentRemoteDescription) {
-          pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    // Host controls
+    const playBtn = document.getElementById("playBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+
+    if (playBtn && pauseBtn) {
+      playBtn.addEventListener("click", async () => {
+        player.playVideo();
+        await updateDoc(roomRef, { action: "play", time: player.getCurrentTime() });
+      });
+
+      pauseBtn.addEventListener("click", async () => {
+        player.pauseVideo();
+        await updateDoc(roomRef, { action: "pause", time: player.getCurrentTime() });
+      });
+    }
+
+    // Sync guests with host
+    if (roomRef) {
+      onSnapshot(roomRef, (docSnap) => {
+        if (docSnap.exists() && !isHost) {
+          const data = docSnap.data();
+          if (data.action === "play") {
+            player.seekTo(data.time, true);
+            player.playVideo();
+          } else if (data.action === "pause") {
+            player.seekTo(data.time, true);
+            player.pauseVideo();
+          }
         }
       });
+    }
 
-      onSnapshot(answerCandidates, snapshot => {
-        snapshot.docChanges().forEach(change => {
-          if (change.type === "added") {
-            pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-          }
-        });
-      });
-    };
-
-    document.getElementById("joinBtn").onclick = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const id = urlParams.get("id");
-      if (!id) {
-        alert("No session ID found in the URL.");
-        return;
-      }
-
-      const callDoc = doc(db, "calls", id);
-      const offerCandidates = collection(callDoc, "offerCandidates");
-      const answerCandidates = collection(callDoc, "answerCandidates");
-
-      pc.onicecandidate = e => {
-        if (e.candidate) addDoc(answerCandidates, e.candidate.toJSON());
-      };
-
-      pc.ontrack = e => {
-        remoteVideo.srcObject = e.streams[0];
-      };
-
-      const callData = (await getDoc(callDoc)).data();
-      await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
-
-      const answerDesc = await pc.createAnswer();
-      await pc.setLocalDescription(answerDesc);
-
-      await setDoc(callDoc, { answer: { type: answerDesc.type, sdp: answerDesc.sdp } }, { merge: true });
-
-      onSnapshot(offerCandidates, snapshot => {
-        snapshot.docChanges().forEach(change => {
-          if (change.type === "added") {
-            pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-          }
-        });
-      });
-    };
-
-    document.getElementById("stopBtn").onclick = async () => {
-      pc.close();
-      if (localStream) localStream.getTracks().forEach(track => track.stop());
-      alert("Session ended.");
-      location.href = "/";
-    };
+    // Initialize room for host
+    if (isHost && roomRef) {
+      setDoc(roomRef, { action: "pause", time: 0 });
+    }
   </script>
 </body>
 </html>
-
