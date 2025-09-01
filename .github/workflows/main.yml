@@ -1,27 +1,32 @@
-name: Deploy to GitHub Pages
+name: build-and-deploy
 
 on:
-  push:
-    branches:
-      - main
+push:
+branches:
+- main
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+build-and-deploy:
+runs-on: ubuntu-latest
 
-      - name: Inject Firebase Config
-        run: |
-          sed -i "s|<!-- FIREBASE_CONFIG_PLACEHOLDER -->|<script>const firebaseConfig = JSON.parse(atob('${{ secrets.FIREBASE_CONFIG_BASE64 }}')); const appId = '${{ secrets.APP_ID }}'; const initialAuthToken = '${{ secrets.AUTH_TOKEN }}';</script>|g" index.html
-        env:
-          FIREBASE_CONFIG_BASE64: ${{ secrets.FIREBASE_CONFIG_BASE64 }}
-          APP_ID: ${{ secrets.APP_ID }}
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+permissions:
+  contents: write
+  pages: write
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
+steps:
+  - name: Checkout Repository
+    uses: actions/checkout@v3
+
+  - name: Inject Firebase Config
+    run: |
+      sed -i "s|const firebaseConfig = {.*};|const firebaseConfig = JSON.parse(atob('\${{ secrets.FIREBASE_CONFIG }}'));|" index.html
+      sed -i "s|const appId = '.*';|const appId = '\${{ secrets.APP_ID }}';|" index.html
+      sed -i "s|const initialAuthToken = '.*';|const initialAuthToken = '\${{ secrets.INITIAL_AUTH_TOKEN }}';|" index.html
+
+  - name: Deploy to GitHub Pages
+    uses: peaceiris/actions-gh-pages@v3
+    with:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      publish_dir: ./
+      keep_files: false
+      force_orphan: true
