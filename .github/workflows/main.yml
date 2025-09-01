@@ -14,9 +14,11 @@ jobs:
 
       - name: Inject Firebase Config
         run: |
-          sed -i "s|const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;|const firebaseConfig = '${{ secrets.FIREBASE_CONFIG }}';|g" index.html
-          sed -i "s|const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';|const appId = '${{ secrets.APP_ID }}';|g" index.html
-          sed -i "s|const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;|const initialAuthToken = '${{ secrets.AUTH_TOKEN }}';|g" index.html
+          sed -i "s|<!-- FIREBASE_CONFIG_PLACEHOLDER -->|<script>const firebaseConfig = JSON.parse(atob('${{ secrets.FIREBASE_CONFIG_BASE64 }}')); const appId = '${{ secrets.APP_ID }}'; const initialAuthToken = '${{ secrets.AUTH_TOKEN }}';</script>|g" index.html
+        env:
+          FIREBASE_CONFIG_BASE64: ${{ secrets.FIREBASE_CONFIG_BASE64 }}
+          APP_ID: ${{ secrets.APP_ID }}
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
