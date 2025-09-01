@@ -11,6 +11,9 @@
             background-color: #1a1a2e;
             color: white;
             font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
         .container {
             max-width: 1200px;
@@ -27,6 +30,37 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+
+        /* Chat-specific styles for the limited view and smooth transitions */
+        .chat-messages-container {
+            max-height: 80px; /* Adjust height to show only a couple of messages */
+            overflow-y: hidden;
+            transition: max-height 0.3s ease-in-out;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column-reverse; /* New messages appear at the bottom */
+        }
+        .chat-messages-container.expanded {
+            max-height: 250px; /* Expanded height */
+            overflow-y: auto;
+        }
+        /* Custom scrollbar for expanded view */
+        .chat-messages-container.expanded::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-messages-container.expanded::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        .chat-messages-container.expanded::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+        }
+        
+        .chat-message-bubble {
+            background-color: rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
@@ -44,19 +78,29 @@
 
         <!-- Main Content -->
         <main class="flex-1 flex flex-col items-center justify-center p-4">
-            <div id="video-container" class="relative w-full h-full bg-black rounded-xl overflow-hidden shadow-2xl flex items-center justify-center">
+            <div id="video-container" class="relative flex-1 bg-black rounded-xl overflow-hidden shadow-2xl flex items-center justify-center w-full">
                 <video id="remote-video" class="w-full h-full object-contain" autoplay playsinline></video>
                 <div id="loading-message" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-xl text-white text-2xl">
-                    Waiting for host to share screen...
+                    Waiting for host to start the stream...
+                </div>
+                <!-- Chat Section (Overlay) -->
+                <div id="chat-container" class="absolute bottom-4 right-4 sm:w-3/4 md:w-1/3 lg:w-1/4 flex flex-col p-4 z-20">
+                    <div id="chat-messages" class="flex-1 mb-2 chat-messages-container">
+                        <!-- Chat messages will be appended here -->
+                    </div>
+                    <div class="flex">
+                        <input type="text" id="chat-input" class="flex-1 rounded-l-full px-4 py-2 bg-gray-700/75 text-white focus:outline-none" placeholder="Type a message...">
+                        <button id="send-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-r-full transition-colors duration-300">Send</button>
+                    </div>
                 </div>
             </div>
         </main>
         
-        <!-- Action Buttons (Host controls) -->
+        <!-- Action Buttons -->
         <footer class="p-4 flex justify-center space-x-4">
-            <button id="become-host" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Become Host & Share Screen</button>
-            <button id="turn-mic-on" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Turn Mic On</button>
-            <button id="choose-video" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Choose Video File</button>
+            <button id="start-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Start Streaming</button>
+            <button id="stop-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Stop Streaming</button>
+            <button id="mic-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Turn Mic On</button>
         </footer>
     </div>
     
@@ -73,7 +117,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global variables provided by the Canvas environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -82,6 +126,7 @@
 
         let db, auth, userId;
         const hostDocPath = `/artifacts/${appId}/public/data/host_session/current_host`;
+        const chatCollectionPath = `/artifacts/${appId}/public/data/chat_messages`;
 
         // --- UI Elements ---
         const authTextEl = document.getElementById('auth-text');
@@ -89,7 +134,15 @@
         const remoteVideoEl = document.getElementById('remote-video');
         const loadingMessageEl = document.getElementById('loading-message');
         const inviteLinkEl = document.getElementById('invite-link');
-        const becomeHostBtn = document.getElementById('become-host');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const micBtn = document.getElementById('mic-btn');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatMessages = document.getElementById('chat-messages');
+
+        // State for chat expansion
+        let isChatExpanded = false;
 
         // --- Custom Modal Functions ---
         const modal = document.getElementById('custom-modal');
@@ -129,17 +182,20 @@
                         userIdDisplayEl.textContent = `User ID: ${userId}`;
                         userIdDisplayEl.classList.remove('hidden');
                         
-                        // Enable the host button once authenticated
-                        becomeHostBtn.disabled = false;
-                        
                         // Update the invite link with the current user's ID
                         const inviteUrl = `${window.location.origin}${window.location.pathname}?inviteId=${userId}`;
                         inviteLinkEl.href = inviteUrl;
+                        inviteLinkEl.onclick = (e) => {
+                            e.preventDefault();
+                            navigator.clipboard.writeText(inviteUrl);
+                            showModal("Link Copied!", "The invite link has been copied to your clipboard.");
+                        };
 
                         console.log(`User authenticated with UID: ${userId}`);
 
-                        // Start listening for host data after authentication is complete
+                        // Start listening for host data and chat messages after authentication
                         listenForHostData();
+                        listenForChatMessages();
                     } else {
                         console.log("No user signed in. Attempting to sign in...");
                         // Use a custom token if available, otherwise sign in anonymously
@@ -157,29 +213,23 @@
         }
         
         // --- WebRTC Logic (Host) ---
-        becomeHostBtn.addEventListener('click', async () => {
+        startBtn.addEventListener('click', async () => {
             if (!userId) {
-                showModal("Authentication Error", "Please wait for authentication to complete before becoming a host.");
+                showModal("Authentication Error", "Please wait for authentication to complete before starting a stream.");
                 return;
             }
 
             const hostDocRef = doc(db, hostDocPath);
             try {
-                // Try to get screen share stream
                 const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
                 if (stream) {
-                    // Set the local video source to the screen share
                     remoteVideoEl.srcObject = stream;
                     loadingMessageEl.classList.add('hidden');
-
-                    // Update Firestore to signal that a host is now active
+                    
                     await setDoc(hostDocRef, {
                         hostId: userId,
-                        // In a real app, you would use WebRTC to share the stream.
-                        // For this example, we just signal that a host is active.
                         streamActive: true, 
-                        // You'd also store signaling data here
-                    }, { merge: true });
+                    });
 
                     showModal("Hosting Session", "You are now the host. Your screen is being shared. Share the invite link with your friends.");
                     console.log(`Host session started by user: ${userId}`);
@@ -192,6 +242,116 @@
             }
         });
 
+        stopBtn.addEventListener('click', async () => {
+            if (userId) {
+                const hostDocRef = doc(db, hostDocPath);
+                try {
+                    await setDoc(hostDocRef, { hostId: null, streamActive: false });
+                    if (remoteVideoEl.srcObject) {
+                        remoteVideoEl.srcObject.getTracks().forEach(track => track.stop());
+                        remoteVideoEl.srcObject = null;
+                    }
+                    loadingMessageEl.classList.remove('hidden');
+                    showModal("Session Ended", "The streaming session has been stopped.");
+                } catch (error) {
+                    showModal("Error", `An error occurred while stopping the session: ${error.message}`);
+                    console.error("Error stopping host session:", error);
+                }
+            }
+        });
+
+        // --- Microphone Logic ---
+        micBtn.addEventListener('click', () => {
+            if (remoteVideoEl.srcObject) {
+                const audioTracks = remoteVideoEl.srcObject.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    audioTracks[0].enabled = !audioTracks[0].enabled;
+                    micBtn.textContent = audioTracks[0].enabled ? 'Turn Mic Off' : 'Turn Mic On';
+                    showModal("Mic Toggled", `Microphone is now ${audioTracks[0].enabled ? 'on' : 'off'}.`);
+                } else {
+                    showModal("Mic Error", "No audio tracks found in the stream.");
+                }
+            } else {
+                showModal("Mic Error", "Please start a stream first to use the microphone.");
+            }
+        });
+
+        // --- Chat Logic ---
+        sendBtn.addEventListener('click', async () => {
+            const messageText = chatInput.value.trim();
+            if (messageText !== '' && userId) {
+                try {
+                    await addDoc(collection(db, chatCollectionPath), {
+                        userId: userId,
+                        message: messageText,
+                        timestamp: serverTimestamp()
+                    });
+                    chatInput.value = '';
+                } catch (error) {
+                    showModal("Chat Error", `Failed to send message: ${error.message}`);
+                    console.error("Error sending message:", error);
+                }
+            }
+        });
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendBtn.click();
+            }
+        });
+        
+        // Add a hover listener to the chat messages container to toggle expanded view
+        chatMessages.addEventListener('mouseenter', () => {
+            chatMessages.classList.add('expanded');
+        });
+
+        chatMessages.addEventListener('mouseleave', () => {
+            chatMessages.classList.remove('expanded');
+        });
+
+        function listenForChatMessages() {
+            const chatColRef = collection(db, chatCollectionPath);
+            onSnapshot(chatColRef, (querySnapshot) => {
+                const messages = [];
+                querySnapshot.forEach((doc) => {
+                    messages.push(doc.data());
+                });
+
+                // Sort messages by timestamp to ensure the order is correct
+                messages.sort((a, b) => {
+                  const aTime = a.timestamp ? a.timestamp.toMillis() : 0;
+                  const bTime = b.timestamp ? b.timestamp.toMillis() : 0;
+                  return aTime - bTime;
+                });
+
+                chatMessages.innerHTML = '';
+                
+                messages.forEach((data) => {
+                    const messageEl = document.createElement('div');
+                    
+                    messageEl.classList.add('mb-1', 'p-1', 'rounded-lg', 'break-words', 'whitespace-pre-wrap');
+                    messageEl.style.maxWidth = '100%';
+                    messageEl.style.wordWrap = 'break-word';
+                    messageEl.classList.add('chat-message-bubble', 'text-left');
+                    
+                    const senderSpan = document.createElement('span');
+                    senderSpan.classList.add('font-bold', 'text-xs', 'block', 'mb-0', 'opacity-75');
+                    senderSpan.textContent = `${data.userId}`;
+                    
+                    const messageP = document.createElement('p');
+                    messageP.textContent = data.message;
+                    
+                    messageEl.appendChild(senderSpan);
+                    messageEl.appendChild(messageP);
+                    chatMessages.appendChild(messageEl);
+                });
+            }, (error) => {
+                showModal("Chat Error", `Failed to load chat messages: ${error.message}`);
+                console.error("Error fetching chat messages:", error);
+            });
+        }
+
         // --- Listen for Host Data in Firestore ---
         function listenForHostData() {
             const hostDocRef = doc(db, hostDocPath);
@@ -201,23 +361,26 @@
                     const hostData = docSnapshot.data();
                     console.log("Host data received:", hostData);
                     
-                    if (hostData.hostId) {
+                    if (hostData.hostId && hostData.streamActive) {
                         if (hostData.hostId === userId) {
-                            // Current user is the host, do nothing
-                            return;
+                            console.log("Current user is the host.");
                         } else {
-                            // Another user is the host, display a message
+                            // A different user is the host
                             loadingMessageEl.classList.add('hidden');
-                            remoteVideoEl.srcObject = null; // Clear local stream
+                            remoteVideoEl.srcObject = null; // In a real app, you would connect to their stream here.
                             showModal("Watch Party Active", `A watch party is already active, hosted by ${hostData.hostId}.`);
                         }
+                    } else {
+                        console.log("No active host session found.");
+                        loadingMessageEl.classList.remove('hidden');
+                        remoteVideoEl.srcObject = null;
+                        showModal("No Host Found", "No active host session found. Please click 'Start Streaming' to begin.");
                     }
                 } else {
-                    // No active host session found
-                    console.log("No active host session found.");
+                    console.log("Host document does not exist. No active host session.");
                     loadingMessageEl.classList.remove('hidden');
                     remoteVideoEl.srcObject = null;
-                    showModal("No Host Found", "No active host session found. Please click 'Become Host' to start a session.");
+                    showModal("No Host Found", "No active host session found. Please click 'Start Streaming' to begin.");
                 }
             }, (error) => {
                 showModal("Data Error", `Failed to listen for host data: ${error.message}`);
@@ -227,7 +390,6 @@
 
         // Initialize the app on window load
         window.onload = initializeFirebase;
-
     </script>
 </body>
 </html>
