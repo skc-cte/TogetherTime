@@ -3,393 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TogetherTime</title>
-    <!-- Tailwind CSS -->
+    <title>TogetherTime Host</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #1a1a2e;
-            color: white;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        .message-box {
-            background-color: #2a2a44;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 100;
-        }
-
-        /* Chat-specific styles for the limited view and smooth transitions */
-        .chat-messages-container {
-            max-height: 80px; /* Adjust height to show only a couple of messages */
-            overflow-y: hidden;
-            transition: max-height 0.3s ease-in-out;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column-reverse; /* New messages appear at the bottom */
-        }
-        .chat-messages-container.expanded {
-            max-height: 250px; /* Expanded height */
-            overflow-y: auto;
-        }
-        /* Custom scrollbar for expanded view */
-        .chat-messages-container.expanded::-webkit-scrollbar {
-            width: 8px;
-        }
-        .chat-messages-container.expanded::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-        }
-        .chat-messages-container.expanded::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.3);
-            border-radius: 10px;
-        }
-        
-        .chat-message-bubble {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-    </style>
 </head>
-<body class="bg-[#1a1a2e] text-white">
-    <div class="flex flex-col h-screen">
-        <!-- Header -->
-        <header class="p-4 flex justify-between items-center bg-[#2a2a44] rounded-b-xl shadow-lg">
-            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">TogetherTime</h1>
-            <div id="auth-status" class="flex items-center space-x-2">
-                <span id="auth-text" class="text-green-400">Auth Initializing...</span>
-                <span id="user-id-display" class="bg-gray-700 rounded-full px-3 py-1 text-sm hidden"></span>
-                <a id="invite-link" href="#" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300">Invite</a>
-            </div>
-        </header>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white shadow-xl rounded-lg p-8 w-full max-w-lg space-y-6">
+        <h1 class="text-3xl font-bold text-center text-gray-800">TogetherTime Host</h1>
+        <p class="text-center text-gray-600">Enter a room name to get started.</p>
 
-        <!-- Main Content -->
-        <main class="flex-1 flex flex-col items-center justify-center p-4">
-            <div id="video-container" class="relative flex-1 bg-black rounded-xl overflow-hidden shadow-2xl flex items-center justify-center w-full">
-                <video id="remote-video" class="w-full h-full object-contain" autoplay playsinline></video>
-                <div id="loading-message" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-xl text-white text-2xl">
-                    Waiting for host to start the stream...
-                </div>
-                <!-- Chat Section (Overlay) -->
-                <div id="chat-container" class="absolute bottom-4 right-4 sm:w-3/4 md:w-1/3 lg:w-1/4 flex flex-col p-4 z-20">
-                    <div id="chat-messages" class="flex-1 mb-2 chat-messages-container">
-                        <!-- Chat messages will be appended here -->
-                    </div>
-                    <div class="flex">
-                        <input type="text" id="chat-input" class="flex-1 rounded-l-full px-4 py-2 bg-gray-700/75 text-white focus:outline-none" placeholder="Type a message...">
-                        <button id="send-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-r-full transition-colors duration-300">Send</button>
-                    </div>
-                </div>
+        <!-- Room creation form -->
+        <form id="create-room-form" class="space-y-4">
+            <input type="text" id="room-name-input" placeholder="Enter a room name" required
+                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="submit"
+                    class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                Create Room
+            </button>
+        </form>
+
+        <!-- Room ID display -->
+        <div id="room-id-display" class="hidden text-center mt-4">
+            <h2 class="text-2xl font-semibold text-gray-700">Room Created!</h2>
+            <p class="text-gray-600">Share this ID with your friends:</p>
+            <div class="flex items-center justify-center space-x-2 mt-2">
+                <span id="room-id" class="text-xl font-mono bg-gray-200 px-3 py-1 rounded-md text-gray-800"></span>
+                <button id="copy-button" class="bg-gray-300 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-400 transition-colors">
+                    Copy
+                </button>
             </div>
-        </main>
-        
-        <!-- Action Buttons -->
-        <footer class="p-4 flex justify-center space-x-4">
-            <button id="start-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Start Streaming</button>
-            <button id="stop-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Stop Streaming</button>
-            <button id="mic-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Turn Mic On</button>
-        </footer>
-    </div>
-    
-    <!-- Custom Modal for Alerts -->
-    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-[#2a2a44] rounded-lg p-6 shadow-xl w-80">
-            <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
-            <p id="modal-message" class="text-gray-300 mb-4"></p>
-            <button id="modal-ok-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full">OK</button>
+        </div>
+
+        <!-- Waiting message -->
+        <div id="waiting-message" class="hidden text-center mt-4">
+            <p class="text-gray-600">Waiting for players to join...</p>
+        </div>
+
+        <!-- Error/info message -->
+        <div id="message-box" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline" id="message-text"></span>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase configuration placeholder -->
+    <!-- FIREBASE_CONFIG_PLACEHOLDER -->
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let db, auth, userId;
-        const hostDocPath = `/artifacts/${appId}/public/data/host_session/current_host`;
-        const chatCollectionPath = `/artifacts/${appId}/public/data/chat_messages`;
-
-        // --- UI Elements ---
-        const authTextEl = document.getElementById('auth-text');
-        const userIdDisplayEl = document.getElementById('user-id-display');
-        const remoteVideoEl = document.getElementById('remote-video');
-        const loadingMessageEl = document.getElementById('loading-message');
-        const inviteLinkEl = document.getElementById('invite-link');
-        const startBtn = document.getElementById('start-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const micBtn = document.getElementById('mic-btn');
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
-        const chatMessages = document.getElementById('chat-messages');
-
-        // State for chat expansion
-        let isChatExpanded = false;
-
-        // --- Custom Modal Functions ---
-        const modal = document.getElementById('custom-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalOkBtn = document.getElementById('modal-ok-btn');
-
-        function showModal(title, message) {
-            modalTitle.textContent = title;
-            modalMessage.textContent = message;
-            modal.classList.remove('hidden');
-        }
-
-        modalOkBtn.onclick = () => {
-            modal.classList.add('hidden');
+        // Global variables provided by the canvas environment
+        // The GitHub Actions workflow will inject the correct values here
+        // The values below are for local testing only
+        const defaultFirebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-auth-domain",
+            projectId: "your-project-id",
+            storageBucket: "your-storage-bucket",
+            messagingSenderId: "your-messaging-sender-id",
+            appId: "your-app-id",
+            measurementId: "your-measurement-id"
         };
-
-        // --- Firebase Initialization and Authentication ---
-        async function initializeFirebase() {
-            if (!firebaseConfig) {
-                const errorMessage = "Firebase configuration is not available. This is a common issue when running the app outside of the Canvas environment. To fix this, please ensure the app is hosted on a platform that provides the necessary Firebase configuration variables.";
-                showModal("Configuration Error", errorMessage);
-                console.error("Firebase config not found. Host this app via a platform that provides the config.");
-                return;
-            }
-
-            try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                // Set up authentication listener to get the user ID
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        authTextEl.textContent = 'Auth successful!';
-                        userIdDisplayEl.textContent = `User ID: ${userId}`;
-                        userIdDisplayEl.classList.remove('hidden');
-                        
-                        // Update the invite link with the current user's ID
-                        const inviteUrl = `${window.location.origin}${window.location.pathname}?inviteId=${userId}`;
-                        inviteLinkEl.href = inviteUrl;
-                        inviteLinkEl.onclick = (e) => {
-                            e.preventDefault();
-                            navigator.clipboard.writeText(inviteUrl);
-                            showModal("Link Copied!", "The invite link has been copied to your clipboard.");
-                        };
-
-                        console.log(`User authenticated with UID: ${userId}`);
-
-                        // Start listening for host data and chat messages after authentication
-                        listenForHostData();
-                        listenForChatMessages();
-                    } else {
-                        console.log("No user signed in. Attempting to sign in...");
-                        // Use a custom token if available, otherwise sign in anonymously
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    }
-                });
-            } catch (error) {
-                showModal("Connection Error", `Failed to connect to Firebase: ${error.message}`);
-                console.error("Firebase initialization failed:", error);
-            }
-        }
         
-        // --- WebRTC Logic (Host) ---
-        startBtn.addEventListener('click', async () => {
-            if (!userId) {
-                showModal("Authentication Error", "Please wait for authentication to complete before starting a stream.");
-                return;
-            }
+        // This is a special instruction for the app to work within the canvas environment.
+        // It's a way for the app to access the pre-configured Firebase instance and custom auth token.
+        // The production values are injected by the CI/CD pipeline using the GitHub Secrets.
+        const firebaseConfig = typeof window.__firebase_config !== 'undefined' ? JSON.parse(window.__firebase_config) : defaultFirebaseConfig;
+        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
+        const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
 
-            const hostDocRef = doc(db, hostDocPath);
-            try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                if (stream) {
-                    remoteVideoEl.srcObject = stream;
-                    loadingMessageEl.classList.add('hidden');
-                    
-                    await setDoc(hostDocRef, {
-                        hostId: userId,
-                        streamActive: true, 
-                    });
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userId = null;
 
-                    showModal("Hosting Session", "You are now the host. Your screen is being shared. Share the invite link with your friends.");
-                    console.log(`Host session started by user: ${userId}`);
-                } else {
-                    showModal("Screen Share Failed", "Failed to get a screen sharing stream. Please ensure you granted permission.");
-                }
-            } catch (error) {
-                showModal("Error", `An error occurred while starting the session: ${error.message}`);
-                console.error("Error starting host session:", error);
-            }
-        });
+        // UI elements
+        const createRoomForm = document.getElementById('create-room-form');
+        const roomNameInput = document.getElementById('room-name-input');
+        const roomIdDisplay = document.getElementById('room-id-display');
+        const roomIdSpan = document.getElementById('room-id');
+        const copyButton = document.getElementById('copy-button');
+        const waitingMessage = document.getElementById('waiting-message');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
 
-        stopBtn.addEventListener('click', async () => {
-            if (userId) {
-                const hostDocRef = doc(db, hostDocPath);
-                try {
-                    await setDoc(hostDocRef, { hostId: null, streamActive: false });
-                    if (remoteVideoEl.srcObject) {
-                        remoteVideoEl.srcObject.getTracks().forEach(track => track.stop());
-                        remoteVideoEl.srcObject = null;
-                    }
-                    loadingMessageEl.classList.remove('hidden');
-                    showModal("Session Ended", "The streaming session has been stopped.");
-                } catch (error) {
-                    showModal("Error", `An error occurred while stopping the session: ${error.message}`);
-                    console.error("Error stopping host session:", error);
-                }
-            }
-        });
-
-        // --- Microphone Logic ---
-        micBtn.addEventListener('click', () => {
-            if (remoteVideoEl.srcObject) {
-                const audioTracks = remoteVideoEl.srcObject.getAudioTracks();
-                if (audioTracks.length > 0) {
-                    audioTracks[0].enabled = !audioTracks[0].enabled;
-                    micBtn.textContent = audioTracks[0].enabled ? 'Turn Mic Off' : 'Turn Mic On';
-                    showModal("Mic Toggled", `Microphone is now ${audioTracks[0].enabled ? 'on' : 'off'}.`);
-                } else {
-                    showModal("Mic Error", "No audio tracks found in the stream.");
-                }
+        // Show a message to the user
+        function showMessage(message, isError = false) {
+            messageBox.classList.remove('hidden');
+            messageText.textContent = message;
+            if (isError) {
+                messageBox.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+                messageBox.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
             } else {
-                showModal("Mic Error", "Please start a stream first to use the microphone.");
+                messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+                messageBox.classList.remove('bg-red-100', 'border-red-400', 'text-red-700');
             }
-        });
-
-        // --- Chat Logic ---
-        sendBtn.addEventListener('click', async () => {
-            const messageText = chatInput.value.trim();
-            if (messageText !== '' && userId) {
-                try {
-                    await addDoc(collection(db, chatCollectionPath), {
-                        userId: userId,
-                        message: messageText,
-                        timestamp: serverTimestamp()
-                    });
-                    chatInput.value = '';
-                } catch (error) {
-                    showModal("Chat Error", `Failed to send message: ${error.message}`);
-                    console.error("Error sending message:", error);
-                }
-            }
-        });
-
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                sendBtn.click();
-            }
-        });
-        
-        // Add a hover listener to the chat messages container to toggle expanded view
-        chatMessages.addEventListener('mouseenter', () => {
-            chatMessages.classList.add('expanded');
-        });
-
-        chatMessages.addEventListener('mouseleave', () => {
-            chatMessages.classList.remove('expanded');
-        });
-
-        function listenForChatMessages() {
-            const chatColRef = collection(db, chatCollectionPath);
-            onSnapshot(chatColRef, (querySnapshot) => {
-                const messages = [];
-                querySnapshot.forEach((doc) => {
-                    messages.push(doc.data());
-                });
-
-                // Sort messages by timestamp to ensure the order is correct
-                messages.sort((a, b) => {
-                  const aTime = a.timestamp ? a.timestamp.toMillis() : 0;
-                  const bTime = b.timestamp ? b.timestamp.toMillis() : 0;
-                  return aTime - bTime;
-                });
-
-                chatMessages.innerHTML = '';
-                
-                messages.forEach((data) => {
-                    const messageEl = document.createElement('div');
-                    
-                    messageEl.classList.add('mb-1', 'p-1', 'rounded-lg', 'break-words', 'whitespace-pre-wrap');
-                    messageEl.style.maxWidth = '100%';
-                    messageEl.style.wordWrap = 'break-word';
-                    messageEl.classList.add('chat-message-bubble', 'text-left');
-                    
-                    const senderSpan = document.createElement('span');
-                    senderSpan.classList.add('font-bold', 'text-xs', 'block', 'mb-0', 'opacity-75');
-                    senderSpan.textContent = `${data.userId}`;
-                    
-                    const messageP = document.createElement('p');
-                    messageP.textContent = data.message;
-                    
-                    messageEl.appendChild(senderSpan);
-                    messageEl.appendChild(messageP);
-                    chatMessages.appendChild(messageEl);
-                });
-            }, (error) => {
-                showModal("Chat Error", `Failed to load chat messages: ${error.message}`);
-                console.error("Error fetching chat messages:", error);
-            });
         }
 
-        // --- Listen for Host Data in Firestore ---
-        function listenForHostData() {
-            const hostDocRef = doc(db, hostDocPath);
-
-            onSnapshot(hostDocRef, (docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const hostData = docSnapshot.data();
-                    console.log("Host data received:", hostData);
-                    
-                    if (hostData.hostId && hostData.streamActive) {
-                        if (hostData.hostId === userId) {
-                            console.log("Current user is the host.");
-                        } else {
-                            // A different user is the host
-                            loadingMessageEl.classList.add('hidden');
-                            remoteVideoEl.srcObject = null; // In a real app, you would connect to their stream here.
-                            showModal("Watch Party Active", `A watch party is already active, hosted by ${hostData.hostId}.`);
-                        }
-                    } else {
-                        console.log("No active host session found.");
-                        loadingMessageEl.classList.remove('hidden');
-                        remoteVideoEl.srcObject = null;
-                        showModal("No Host Found", "No active host session found. Please click 'Start Streaming' to begin.");
-                    }
+        // Handle user authentication
+        async function authenticateUser() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
                 } else {
-                    console.log("Host document does not exist. No active host session.");
-                    loadingMessageEl.classList.remove('hidden');
-                    remoteVideoEl.srcObject = null;
-                    showModal("No Host Found", "No active host session found. Please click 'Start Streaming' to begin.");
+                    await signInAnonymously(auth);
                 }
-            }, (error) => {
-                showModal("Data Error", `Failed to listen for host data: ${error.message}`);
-                console.error("Error fetching host document:", error);
-            });
+                userId = auth.currentUser.uid;
+                console.log("User authenticated:", userId);
+            } catch (error) {
+                console.error("Authentication failed:", error);
+                showMessage("Authentication failed. Please refresh the page.", true);
+            }
         }
 
-        // Initialize the app on window load
-        window.onload = initializeFirebase;
+        // Create a new room
+        createRoomForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const roomName = roomNameInput.value.trim();
+            if (!roomName || !userId) {
+                showMessage("Please enter a room name.", true);
+                return;
+            }
+
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const roomId = `${appId}_${userId}`; // Ensure room ID is unique per app and user
+                
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+                await setDoc(roomRef, {
+                    hostId: userId,
+                    name: roomName,
+                    status: 'waiting',
+                    createdAt: new Date().toISOString()
+                });
+
+                roomIdSpan.textContent = roomId;
+                createRoomForm.classList.add('hidden');
+                roomIdDisplay.classList.remove('hidden');
+                waitingMessage.classList.remove('hidden');
+
+                // Listen for changes in the room document to know when players join
+                onSnapshot(roomRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        console.log("Room updated:", data);
+                        // You can add logic here to display players as they join
+                    }
+                });
+
+                showMessage("Room created successfully!", false);
+
+            } catch (error) {
+                console.error("Error creating room:", error);
+                showMessage("Failed to create room. Please try again.", true);
+            }
+        });
+
+        // Copy room ID to clipboard
+        copyButton.addEventListener('click', () => {
+            const roomText = roomIdSpan.textContent;
+            if (roomText) {
+                const tempInput = document.createElement('input');
+                tempInput.value = roomText;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showMessage("Room ID copied to clipboard!", false);
+            }
+        });
+
+        // Initialize authentication on page load
+        authenticateUser();
     </script>
 </body>
 </html>
