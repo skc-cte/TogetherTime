@@ -14,13 +14,9 @@ jobs:
 
       - name: Inject Firebase Config
         run: |
-          sed -i 's|const firebaseConfig = typeof __firebase_config !== '\''undefined'\'' ? JSON.parse(__firebase_config) : null;|const firebaseConfig = '"$FIREBASE_CONFIG"';|g' index.html
-          sed -i 's|const appId = typeof __app_id !== '\''undefined'\'' ? __app_id : '\''default-app-id'\'';|const appId = '\''"$APP_ID"'\''|g' index.html
-          sed -i 's|const initialAuthToken = typeof __initial_auth_token !== '\''undefined'\'' ? __initial_auth_token : null;|const initialAuthToken = '\''"$AUTH_TOKEN"'\''|g' index.html
-        env:
-          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
-          APP_ID: ${{ secrets.APP_ID }}
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          sed -i "s|const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;|const firebaseConfig = '${{ secrets.FIREBASE_CONFIG }}';|g" index.html
+          sed -i "s|const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';|const appId = '${{ secrets.APP_ID }}';|g" index.html
+          sed -i "s|const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;|const initialAuthToken = '${{ secrets.AUTH_TOKEN }}';|g" index.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
